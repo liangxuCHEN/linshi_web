@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}组件使用率计算{% endblock %}
+{% block content %}
+<div class="jumbotron">
+<form method="post" action="{% url 'single_use_rate'%}">
+    <label>组件的长(mm)：</label><input type="number" name="shape_x"/><br/>
+    <label>组件的宽(mm)：</label><input type="number" name="shape_y" /><br/>
+    <input type="hidden" name="width"  value="2430"/>
+    <input type="hidden" name="height" value="1210"/>
+    <label>组件的间隙(mm)：</label><input type="number" name="border" value="5"/><br/>
+    <input type="submit" value="提交" />
+</form>
+
+</div>
+{% endblock %}

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="Louis">
+
+    {% block head %}
+    <title>{% block title %}CRM{% endblock %}</title>
+    {% endblock %}
+  </head>
+
+<body role="document">
+<!-- content -->
+<div class="container">{% block content %}{% endblock %}</div>
+
+<div id="footer">
+        {% block footer %}
+
+        {% endblock %}
+ </div>
+
+    {% block script %}
+
+    {% endblock %}
+  </body>
+</html>
