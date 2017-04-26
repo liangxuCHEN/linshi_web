@@ -2,7 +2,7 @@
 import matplotlib.patches as patches
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
-import time
+import copy
 
 """
 计算一个矩形组件的使用率
@@ -15,7 +15,6 @@ def use_rate(use_place, width, height):
     total_use = 0
     for b_x, b_y, w, h in use_place:
         total_use += w * h
-    print(total_use)
     return float(total_use)/width/height * 100
 
 
@@ -41,139 +40,130 @@ def draw_the_pic(position, border_position, width, height, border=0, filename=No
     fig1.savefig('%s.png' % filename, dpi=200)
 
 
-def is_enough(shape, place):
-    width = place[2] - place[0]
-    height = place[3] - place[1]
-    if shape[0] <= width and shape[1] <= height:
-        return True, place
+def update_empty_place(solution, shape_x, shape_y, border):
+    res = list()
+    # 添加放置位置
+    if solution['model'] == 'w':
+        # 第一种情况
+        total_h = solution['place'][1] + shape_y
+        while solution['place'][3] >= total_h:
+            for i in range(0, solution['x']):
+                res.append(
+                    (solution['place'][0] + i * shape_x + i * border,
+                     total_h - shape_y,
+                     shape_x, shape_y)
+                )
+            total_h += shape_y + border
+
+        begin_x = solution['place'][0] + solution['x'] * shape_x + solution['x'] * border
+        # 第二种情况
+        total_h = solution['place'][1] + shape_x
+        while solution['place'][3] >= total_h:
+            for i in range(0, solution['y']):
+                res.append(
+                    (begin_x + i * shape_y + i * border,
+                     total_h - shape_x,
+                     shape_y, shape_x)
+                )
+            total_h += shape_x + border
     else:
-        for v_p in empty_place:
-            if v_p != place:
-                if v_p[0] == place[0] and v_p[2] == place[2] and (v_p[1] == place[3] or v_p[3] == place[1]):
-                    if v_p[3] > place[3]:
-                        new_place = (place[0], place[1], place[2], v_p[3])
-                        i_v_p = empty_place.index(v_p)
-                        i_p = empty_place.index(place)
-                        empty_place.remove(v_p)
-                        empty_place.remove(place)
-                        empty_place.append(new_place)
-                        res, r_place = is_enough(shape, new_place)
-                        if not res:
-                            empty_place.remove(new_place)
-                            empty_place.insert(i_v_p, v_p)
-                            empty_place.insert(i_p, place)
-                        return res, r_place
-                    else:
-                        new_place = (place[0], place[3], place[2], v_p[1])
-                        i_v_p = empty_place.index(v_p)
-                        i_p = empty_place.index(place)
-                        empty_place.remove(v_p)
-                        empty_place.remove(place)
-                        empty_place.append(new_place)
-                        res, r_place = is_enough(shape, new_place)
-                        if not res:
-                            empty_place.remove(new_place)
-                            empty_place.insert(i_v_p, v_p)
-                            empty_place.insert(i_p, place)
-                        return res, r_place
-                if v_p[1] == place[1] and v_p[3] == place[3] and (v_p[0] == place[2] or v_p[2] == place[0]):
-                    if v_p[2] > place[2]:
-                        new_place = (place[0], place[1], v_p[2], place[3])
-                        i_v_p = empty_place.index(v_p)
-                        i_p = empty_place.index(place)
-                        empty_place.remove(v_p)
-                        empty_place.remove(place)
-                        empty_place.append(new_place)
-                        res, r_place = is_enough(shape, new_place)
-                        if not res:
-                            empty_place.remove(new_place)
-                            empty_place.insert(i_v_p, v_p)
-                            empty_place.insert(i_p, place)
-                        return res, r_place
-                    else:
-                        new_place = (v_p[0], place[1], place[2], place[3])
-                        i_v_p = empty_place.index(v_p)
-                        i_p = empty_place.index(place)
-                        empty_place.remove(v_p)
-                        empty_place.remove(place)
-                        empty_place.append(new_place)
-                        res, r_place = is_enough(shape, new_place)
-                        if not res:
-                            empty_place.remove(new_place)
-                            empty_place.insert(i_v_p, v_p)
-                            empty_place.insert(i_p, place)
-                        return res, r_place
-        return False, None
+        # 第一种情况
+        total_w = solution['place'][0] + shape_y
+        while solution['place'][2] >= total_w:
+            for i in range(0, solution['x']):
+                res.append(
+                    (total_w - shape_y,
+                     solution['place'][1] + i * shape_x + i * border,
+                     shape_y, shape_x)
+                )
+            total_w += shape_y + border
+        begin_y = solution['place'][1] + solution['x'] * shape_x + solution['x'] * border
+        # 第二种情况
+        total_w = solution['place'][0] + shape_x
+        while solution['place'][2] >= total_w:
+            for i in range(0, solution['y']):
+                res.append(
+                    (total_w - shape_x,
+                     begin_y + i * shape_y + i * border,
+                     shape_x, shape_y)
+                )
+            total_w += shape_x + border
+    return res
 
 
-def tidy_empty_place(em_place):
-    for i in range(len(em_place)-1,0,-1):
-        for j in range(0, i):
-            # 比较Y的开始值
-            if em_place[j][1] > em_place[j+1][1]:
-                em_place[j], em_place[j+1] = em_place[j+1], em_place[j]
+def cal_rate_num(shape_x, shape_y, length, other, border):
+    max_x = int(length + border) / int((shape_x + border))
+    max_y = int(length + border) / int((shape_y + border))
+    tmp_solution = {
+        'y': 0,
+        'x': 0,
+        'empty': length * other,  # 最小空白地方，初始值为整个
+    }
+    for i in range(0, max_x + 1):
+        for j in range(0, max_y + 1):
+            # 求组合的最小空余地方
+            tmp_length = i * shape_x + j * shape_y + (i + j - 1) * border
+            if length - tmp_length >= 0:
+                tmp_other_len = int(other + border) % int(shape_y + border)
+                total_empty_area = tmp_other_len * (i * shape_x + (i - 1) * border)
+                tmp_other_len = int(other + border) % int(shape_x + border)
+                total_empty_area += tmp_other_len * (j * shape_y + (j - 1) * border)
+                total_empty_area += (length - tmp_length) * other
+                if tmp_solution['empty'] > total_empty_area:
+                    tmp_solution['y'] = j
+                    tmp_solution['x'] = i
+                    tmp_solution['empty'] = total_empty_area
 
-    return em_place
-
-
-def update_empty_place(shape, place, border):
-    # 添加放置位置, 判断是否为边界,添加边框
-    if place[0] != 0 and place[1] != 0:
-        # 不在左边和底部, 两边加一个BORDER/2 的矩形
-        border_list.append((place[0] - border, place[1], border, shape[1]))
-        border_list.append((place[0] - border, place[1] - border, shape[0] + border, border))
-    elif place[0] != 0:
-        border_list.append((place[0] - border, place[1], border, shape[1]))
-    elif place[1] != 0:
-        border_list.append((place[0], place[1] - border, shape[0], border))
-
-    situation.append((place[0], place[1], shape[0], shape[1]))
-    # 新建临时list , 储存新的空白地方, 空白增加边框的面积
-    tmp_empty_place = list()
-    # begin:
-    begin_x = place[0] + shape[0] + border
-    begin_y = place[1] + shape[1] + border
-    # 拆分空余的地方
-    if begin_x < place[2]:
-        tmp_empty_place.append((begin_x, place[1], place[2], shape[1]+place[1]+border))
-    if begin_y < place[3]:
-        tmp_empty_place.append((place[0], begin_y, shape[0]+place[0]+border, place[3]))
-    if begin_x < place[2] and begin_y < place[3]:
-        tmp_empty_place.append((begin_x, begin_y, place[2], place[3]))
-
-    # 保持从左到右,从下到上,找符合的空间
-    for tmp_place in tmp_empty_place[::-1]:
-        empty_place.insert(0, tmp_place)
+    return tmp_solution
 
 
-def only_one(shape_x, shape_y, width, height):
+def find_model(shape_x, shape_y, place, border):
     # 拆分矩形,找适合的矩形, 坐标表示矩形:(0,0,30,40) = begin(0,0), end(30,40)
     # 初始化空白可填充部分
-    # 如果长宽一样，就忽略，若不等，判断怎么放，先看能不能整好，然后看剩余多少
+    # 如果长宽一样，就忽略，若不等，判断怎么放，横竖组合，然后看剩余多少
     # x 是短 ， y是长
-    if shape_x > shape_y:
-        shape_x, shape_y = shape_y, shape_x
-    shape = (shape_x, shape_y)
+    width = place[2] - place[0]
+    height = place[3] - place[1]
+    solution_1 = cal_rate_num(shape_x, shape_y, width, height, border)
+    solution_1['model'] = 'w'
+    solution_1['place'] = place
+    solution_2 = cal_rate_num(shape_x, shape_y, height, width, border)
+    solution_2['model'] = 'h'
+    solution_2['place'] = place
+    if solution_1['empty'] > solution_2['empty']:
+        return solution_2
+    else:
+        return solution_1
 
-    wx = width % shape_x
-    wy = width % shape_y
-    hx = height % shape_x
-    hy = height % shape_y
 
-    model = 'y2w'
-    # 大优先
-    if wy == 0:
-        model = 'y2w'
-    if wx == 0:
-        model = 'x2w'
-    if hy == 0:
-        model = 'x2w'
-    if hx == 0:
-        model = 'y2w'
-
-    if model == 'y2w':
-        shape = (shape[1], shape[0])
-    return shape
+def find_empty_place(shape_x, solution, border):
+    # 找出分割的，更新empty_place
+    if solution['model'] == 'w':
+        empty_place.append((
+            solution['place'][0],
+            solution['place'][1],
+            solution['place'][0] + solution['x'] * shape_x + border * (solution['x']-1),
+            solution['place'][3]
+        ))
+        empty_place.append((
+            solution['place'][0] + solution['x'] * shape_x + border * solution['x'],
+            solution['place'][1],
+            solution['place'][2],
+            solution['place'][3]
+        ))
+    else:
+        empty_place.append((
+            solution['place'][0],
+            solution['place'][1],
+            solution['place'][2],
+            solution['place'][1] + solution['x'] * shape_x + border * (solution['x'] - 1)
+        ))
+        empty_place.append((
+            solution['place'][0],
+            solution['place'][1] + solution['x'] * shape_x + border * solution['x'],
+            solution['place'][2],
+            solution['place'][3]
+        ))
 
 
 def main_process(data, filename):
@@ -186,37 +176,20 @@ def main_process(data, filename):
     empty_place = list()
     situation = list()
     border_list = list()
-    print(empty_place)
     # 整理图形
-    shape = only_one(shape_x, shape_y, WIDTH, HEIGHT)
+    solution = find_model(shape_x, shape_y, (0, 0, WIDTH, HEIGHT), BORDER)
+    # 更新目前的布局情况
+    find_empty_place(shape_x, solution, BORDER)
+    situation = update_empty_place(solution, shape_x, shape_y, BORDER)
 
-    is_done = True
-    can_change = True
-    empty_place.append((0, 0, WIDTH, HEIGHT))
-    # 需要放的个数
-    total_num = 0
-    print(empty_place)
-    while is_done or can_change:
-        # 从左到右,从下到上,找符合的空间
-        # 整理有空的位置排序
-        if not is_done and can_change:
-            shape = (shape[1], shape[0])
-            can_change = False
-        is_done = False
-        tmp_empty_place = tidy_empty_place(empty_place)
-        for place in tmp_empty_place:
-            res, tmp_p = is_enough(shape, place)
-            if res:
-                # 拆分空白地方
-                empty_place.remove(tmp_p)
-                # 更新空余地方
-                update_empty_place(shape, tmp_p, BORDER)
-                total_num += 1
-                print(total_num)
-                is_done = True
-                can_change = True
-                break
-        print is_done, can_change
+    # 找更好的情况
+    tmp_situation = list()
+    for e_place in empty_place:
+        solution = find_model(shape_x, shape_y, e_place, BORDER)
+        tmp_situation += update_empty_place(solution, shape_x, shape_y, BORDER)
+
+    if len(tmp_situation) > len(situation):
+        situation = copy.deepcopy(tmp_situation)
 
     draw_the_pic(situation, border_list, WIDTH, HEIGHT, filename=filename)
 
