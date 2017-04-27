@@ -21,8 +21,8 @@ def single_use_rate(request):
     if request.method == 'POST':
         data = request.POST
         # 命名规则：x_y_width_height_border.png
-        filename = '%s_%s_%s_%s_%s' %\
-                   (data['shape_x'], data['shape_y'], data['width'], data['height'], data['border'])
+        filename = '%s_%s_%s_%s_%s_%s' %\
+                   (data['shape_x'], data['shape_y'], data['width'], data['height'], data['border'], data['is_texture'])
         use_rate = Userate.objects.filter(name=filename)
         if use_rate:
             content = {

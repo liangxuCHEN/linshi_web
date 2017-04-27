@@ -169,28 +169,40 @@ def main_process(data, filename):
     WIDTH = int(data['width'])
     HEIGHT = int(data['height'])
     BORDER = float(data['border'])
-    situation = list()
+    is_texture = int(data['is_texture'])
     # 整理图形
-    solution = find_model(shape_x, shape_y, (0, 0, WIDTH, HEIGHT), BORDER)
+    if is_texture == 1:
+        # 有纹理的，单方向
+        solution = {
+            'y': 0,
+            'x': int(WIDTH + BORDER) / int((shape_x + BORDER)),
+            'empty': WIDTH * HEIGHT,  # 最小空白地方，初始值为整个
+            'model': 'w',
+            'place': (0, 0, WIDTH, HEIGHT)
+        }
+        situation = update_empty_place(solution, shape_x, shape_y, BORDER)
+    else:
+        # 没有纹理的
+        solution = find_model(shape_x, shape_y, (0, 0, WIDTH, HEIGHT), BORDER)
 
-    # 更新目前的布局情况
-    split_place = find_empty_place(shape_x, solution, BORDER)
-    situation = update_empty_place(solution, shape_x, shape_y, BORDER)
-    while True:
-        # 再次判断，找更好的情况
-        tmp_situation = list()
-        tmp_split_place = list()
-        for e_place in split_place:
-            solution = find_model(shape_x, shape_y, e_place, BORDER)
-            tmp_split_place += find_empty_place(shape_x, solution, BORDER)
-            tmp_situation += update_empty_place(solution, shape_x, shape_y, BORDER)
+        # 更新目前的布局情况
+        split_place = find_empty_place(shape_x, solution, BORDER)
+        situation = update_empty_place(solution, shape_x, shape_y, BORDER)
+        while True:
+            # 再次判断，找更好的情况
+            tmp_situation = list()
+            tmp_split_place = list()
+            for e_place in split_place:
+                solution = find_model(shape_x, shape_y, e_place, BORDER)
+                tmp_split_place += find_empty_place(shape_x, solution, BORDER)
+                tmp_situation += update_empty_place(solution, shape_x, shape_y, BORDER)
 
-        # 有更好的情况，就更新
-        if len(tmp_situation) > len(situation):
-            situation = copy.deepcopy(tmp_situation)
-            split_place = copy.deepcopy(tmp_split_place)
-        else:
-            break
+            # 有更好的情况，就更新
+            if len(tmp_situation) > len(situation):
+                situation = copy.deepcopy(tmp_situation)
+                split_place = copy.deepcopy(tmp_split_place)
+            else:
+                break
 
     draw_the_pic(situation, WIDTH, HEIGHT, filename=filename)
 
