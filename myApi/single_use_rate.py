@@ -18,7 +18,7 @@ def use_rate(use_place, width, height):
     return float(total_use)/width/height * 100
 
 
-def draw_the_pic(position, border_position, width, height, border=0, filename=None):
+def draw_the_pic(position, width, height, border=0, filename=None):
     fig1 = Figure(figsize=(12, 6))
     FigureCanvas(fig1)
     ax1 = fig1.add_subplot(111)
@@ -29,10 +29,7 @@ def draw_the_pic(position, border_position, width, height, border=0, filename=No
         output_obj.append(patches.Rectangle((v[0], v[1]), v[2], v[3], edgecolor='m', label='Label',
                                             facecolor='blue', lw=border))
         index_v += 1
-    for v in border_position:
-        output_obj.append(patches.Rectangle((v[0], v[1]), v[2], v[3], edgecolor='m', label='Label',
-                                            facecolor='red', lw=border))
-        index_v += 1
+
     for p in output_obj:
         ax1.add_patch(p)
     ax1.set_xlim(0, width)
@@ -119,9 +116,7 @@ def cal_rate_num(shape_x, shape_y, length, other, border):
 
 def find_model(shape_x, shape_y, place, border):
     # 拆分矩形,找适合的矩形, 坐标表示矩形:(0,0,30,40) = begin(0,0), end(30,40)
-    # 初始化空白可填充部分
     # 如果长宽一样，就忽略，若不等，判断怎么放，横竖组合，然后看剩余多少
-    # x 是短 ， y是长
     width = place[2] - place[0]
     height = place[3] - place[1]
     solution_1 = cal_rate_num(shape_x, shape_y, width, height, border)
@@ -138,6 +133,7 @@ def find_model(shape_x, shape_y, place, border):
 
 def find_empty_place(shape_x, solution, border):
     # 找出分割的，更新empty_place
+    empty_place = list()
     if solution['model'] == 'w':
         empty_place.append((
             solution['place'][0],
@@ -164,33 +160,38 @@ def find_empty_place(shape_x, solution, border):
             solution['place'][2],
             solution['place'][3]
         ))
+    return empty_place
 
 
 def main_process(data, filename):
-    global empty_place, situation, border_list
     shape_x = int(data['shape_x'])
     shape_y = int(data['shape_y'])
     WIDTH = int(data['width'])
     HEIGHT = int(data['height'])
     BORDER = float(data['border'])
-    empty_place = list()
     situation = list()
-    border_list = list()
     # 整理图形
     solution = find_model(shape_x, shape_y, (0, 0, WIDTH, HEIGHT), BORDER)
+
     # 更新目前的布局情况
-    find_empty_place(shape_x, solution, BORDER)
+    split_place = find_empty_place(shape_x, solution, BORDER)
     situation = update_empty_place(solution, shape_x, shape_y, BORDER)
+    while True:
+        # 再次判断，找更好的情况
+        tmp_situation = list()
+        tmp_split_place = list()
+        for e_place in split_place:
+            solution = find_model(shape_x, shape_y, e_place, BORDER)
+            tmp_split_place += find_empty_place(shape_x, solution, BORDER)
+            tmp_situation += update_empty_place(solution, shape_x, shape_y, BORDER)
 
-    # 找更好的情况
-    tmp_situation = list()
-    for e_place in empty_place:
-        solution = find_model(shape_x, shape_y, e_place, BORDER)
-        tmp_situation += update_empty_place(solution, shape_x, shape_y, BORDER)
+        # 有更好的情况，就更新
+        if len(tmp_situation) > len(situation):
+            situation = copy.deepcopy(tmp_situation)
+            split_place = copy.deepcopy(tmp_split_place)
+        else:
+            break
 
-    if len(tmp_situation) > len(situation):
-        situation = copy.deepcopy(tmp_situation)
-
-    draw_the_pic(situation, border_list, WIDTH, HEIGHT, filename=filename)
+    draw_the_pic(situation, WIDTH, HEIGHT, filename=filename)
 
     return use_rate(situation, WIDTH, HEIGHT)
