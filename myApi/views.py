@@ -46,7 +46,33 @@ def single_use_rate(request):
 
 
 
-
+@csrf_exempt
+def single_use_rate_demo(request):
+    if request.method == 'POST':
+        data = request.POST
+        # 命名规则：x_y_width_height_border.png
+        filename = '%s_%s_%s_%s_%s_%s' %\
+                   (data['shape_x'], data['shape_y'], data['width'], data['height'], data['border'], data['is_texture'])
+        use_rate = Userate.objects.filter(name=filename)
+        if use_rate:
+            content = {
+                'rate': use_rate[0].rate,
+                'file_name': 'static/%s.png' % filename,
+            }
+            return render(request, 'use_rate_demo.html', content)
+        else:
+            path = os.path.join(settings.BASE_DIR, 'static')
+            path = os.path.join(path, filename)
+            rate = main_process(data, path)
+            content = {
+                'rate': rate,
+                'file_name': 'static/%s.png' % filename,
+            }
+            new_use_rate = Userate(name=filename, rate=rate)
+            new_use_rate.save()
+            return render(request, 'use_rate_demo.html', content)
+    else:
+        return render(request, 'use_rate_demo.html')
 
 
 

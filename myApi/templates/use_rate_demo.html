@@ -2,7 +2,7 @@
 {% block title %}组件使用率计算{% endblock %}
 {% block content %}
 <div class="jumbotron">
-<form method="post" action="{% url 'single_use_rate'%}">
+<form method="post" action="{% url 'single_use_rate_demo'%}">
     <label>组件的长(mm)：</label><input type="number" name="shape_x"/><br/>
     <label>组件的宽(mm)：</label><input type="number" name="shape_y" /><br/>
     <input type="hidden" name="width"  value="2430"/>
@@ -12,5 +12,9 @@
     <label>无纹理：</label><input type="radio" name="is_texture" value="0" checked /><br/>
     <input type="submit" value="提交" />
 </form>
+{% if file_name %}
+    <p>使用率：{{ rate }}</p>
+    <img src="/{{ file_name }}" width="804" height="400"/>
+{% endif %}
 </div>
 {% endblock %}
