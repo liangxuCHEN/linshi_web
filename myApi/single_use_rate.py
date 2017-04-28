@@ -170,8 +170,11 @@ def main_process(data, filename):
     HEIGHT = int(data['height'])
     BORDER = float(data['border'])
     is_texture = int(data['is_texture'])
+    is_vertical = int(data['is_vertical'])
     # 整理图形
     if is_texture == 1:
+        if is_vertical == 1:
+            shape_x, shape_y = shape_y, shape_x
         # 有纹理的，单方向
         solution = {
             'y': 0,
@@ -207,3 +210,22 @@ def main_process(data, filename):
     draw_the_pic(situation, WIDTH, HEIGHT, filename=filename)
 
     return use_rate(situation, WIDTH, HEIGHT)
+
+
+def use_rate_data_is_valid(data):
+    try:
+        shape_x = int(data['shape_x'])
+        shape_y = int(data['shape_y'])
+        WIDTH = int(data['width'])
+        HEIGHT = int(data['height'])
+        BORDER = float(data['border'])
+    except ValueError:
+        return {'error': True, 'info': u'输入类型错误，输入值必须是数值类型'}
+
+    if shape_x <= 0 or shape_y <= 0 or WIDTH <= 0 or HEIGHT <= 0:
+        return {'error': True, 'info': u'输入尺寸数值错误，尺寸输入值必须大于零'}
+    if shape_x > WIDTH or shape_y > WIDTH:
+        return {'error': True, 'info': u'输入尺寸数值错误，组件尺寸必须小于板材'}
+    if BORDER < 0:
+        return {'error': True, 'info': u'输入尺寸数值错误，组件间隙不能小于零'}
+    return {'error': False}

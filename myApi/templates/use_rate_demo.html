@@ -3,18 +3,25 @@
 {% block content %}
 <div class="jumbotron">
 <form method="post" action="{% url 'single_use_rate_demo'%}">
-    <label>组件的长(mm)：</label><input type="number" name="shape_x"/><br/>
-    <label>组件的宽(mm)：</label><input type="number" name="shape_y" /><br/>
-    <input type="hidden" name="width"  value="2430"/>
-    <input type="hidden" name="height" value="1210"/>
-    <label>组件的间隙(mm)：</label><input type="number" name="border" value="5"/><br/>
+    <label>组件的长(mm)：</label><input type="number" name="shape_x" min="1"/><br/>
+    <label>组件的宽(mm)：</label><input type="number" name="shape_y" min="1"/><br/>
+    <label>板材的长(mm)：</label><input type="number" name="width"  value="2430"/><br/>
+    <label>板材的宽(mm)：</label><input type="number" name="height" value="1210"/><br/>
+    <label>组件的间隙(mm)：</label><input type="number" name="border" value="5" min="0"/><br/>
     <label>有纹理：</label><input type="radio" name="is_texture" value="1" />
     <label>无纹理：</label><input type="radio" name="is_texture" value="0" checked /><br/>
+    <p>选择无纹理，摆放功能失效</p>
+    <label>竖直摆放：</label><input type="radio" name="is_vertical" value="1" />
+    <label>水平摆放：</label><input type="radio" name="is_vertical" value="0" checked /><br/>
     <input type="submit" value="提交" />
 </form>
+{% if error %}
+    <p>输入错误：{{ info }}</p>
+{% endif %}
 {% if file_name %}
-    <p>使用率：{{ rate }}</p>
-    <img src="/{{ file_name }}" width="804" height="400"/>
+    <p>使用率：{{ rate }}%，{{info}}</p>
+    <img src="/{{ file_name }}" width="1004" height="500"/>
 {% endif %}
 </div>
 {% endblock %}
+vertical

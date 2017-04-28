@@ -3,14 +3,19 @@
 {% block content %}
 <div class="jumbotron">
 <form method="post" action="{% url 'single_use_rate'%}">
-    <label>组件的长(mm)：</label><input type="number" name="shape_x"/><br/>
-    <label>组件的宽(mm)：</label><input type="number" name="shape_y" /><br/>
+    <label>组件的长(mm)：</label><input type="number" name="shape_x" min="1"/><br/>
+    <label>组件的宽(mm)：</label><input type="number" name="shape_y" min="1"/><br/>
     <input type="hidden" name="width"  value="2430"/>
     <input type="hidden" name="height" value="1210"/>
-    <label>组件的间隙(mm)：</label><input type="number" name="border" value="5"/><br/>
+    <label>组件的间隙(mm)：</label><input type="number" name="border" value="5" min="0"/><br/>
     <label>有纹理：</label><input type="radio" name="is_texture" value="1" />
     <label>无纹理：</label><input type="radio" name="is_texture" value="0" checked /><br/>
+    <label>竖直摆放：</label><input type="radio" name="is_vertical" value="1" />
+    <label>水平摆放：</label><input type="radio" name="is_vertical" value="0" checked /><br/>
     <input type="submit" value="提交" />
 </form>
+    {% if error %}
+    <p>输入错误：{{ info }}</p>
+    {% endif %}
 </div>
 {% endblock %}
