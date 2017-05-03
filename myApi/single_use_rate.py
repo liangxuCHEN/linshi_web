@@ -15,7 +15,7 @@ def use_rate(use_place, width, height):
     total_use = 0
     for b_x, b_y, w, h in use_place:
         total_use += w * h
-    return float(total_use)/width/height * 100
+    return float(int(float(total_use)/width/height * 100))/100
 
 
 def draw_the_pic(position, width, height, border=0, filename=None):

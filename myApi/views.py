@@ -28,7 +28,7 @@ def single_use_rate(request):
             use_rate = Userate.objects.filter(name=filename)
             if use_rate:
                 content = {
-                    'rate': '%0.2f' % use_rate[0].rate,
+                    'rate': use_rate[0].rate,
                     'file_name': 'static/%s.png' % filename,
                 }
                 return HttpResponse(json.dumps(content), content_type="application/json")
@@ -37,7 +37,7 @@ def single_use_rate(request):
                 path = os.path.join(path, filename)
                 rate = main_process(data, path)
                 content = {
-                    'rate': '%0.2f' % rate,
+                    'rate': rate,
                     'file_name': 'static/%s.png' % filename,
                 }
                 new_use_rate = Userate(name=filename, rate=rate)
@@ -67,7 +67,7 @@ def single_use_rate_demo(request):
                 info = u'组件：%s x %s ，板材尺寸：%s x %s' % (
                     data['shape_x'], data['shape_y'], data['width'], data['height'])
                 content = {
-                    'rate': '%0.2f' % use_rate[0].rate,
+                    'rate': use_rate[0].rate,
                     'file_name': 'static/%s.png' % filename,
                     'info': info,
                 }
@@ -79,7 +79,7 @@ def single_use_rate_demo(request):
                 info = u'组件：%s x %s ，板材尺寸：%s x %s' % (
                     data['shape_x'], data['shape_y'], data['width'], data['height'])
                 content = {
-                    'rate': '%0.2f' % rate,
+                    'rate': rate,
                     'file_name': 'static/%s.png' % filename,
                     'info': info,
                 }
