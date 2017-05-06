@@ -8,7 +8,7 @@ def use_rate(use_place, width, height):
     total_use = 0
     for b_x, b_y, w, h in use_place:
         total_use += w * h
-    return float(int(float(total_use)/width/height * 100))/100
+    return int(float(total_use)/width/height * 100)/100.0
 
 
 def draw_many_pics(positions, width, height, path, border=0):
@@ -97,27 +97,46 @@ def tidy_shape(shapes, shapes_num, texture, vertical):
     return new_list, tmp_list
 
 
-def draw_one_pic(positions, rates, title, width, height, path, border=0):
+def draw_one_pic(shapes, positions, rates, title, width, height, path, border=0):
+    # 写一个空白文档，说明情况
+    with open('%s_desc.txt' % path, 'w') as f:
+        f.write('# : %d x %d \n' % (width, height))
+        for i_shape in range(0, len(shapes)):
+            f.write('%d : %d x %d \n' % (i_shape, shapes[i_shape][0], shapes[i_shape][1]))
+
     i_p = 0
     num = len(positions)
     fig_height = num * 4
     fig1 = Figure(figsize=(8, fig_height))
     fig1.suptitle(title, fontsize=12, fontweight='bold')
+    fig1.subplots_adjust(bottom=0.1, top=0.95)
     FigureCanvas(fig1)
-    code = 100 * num + 11
+
     for position in positions:
-        ax1 = fig1.add_subplot(code + i_p, aspect='equal')
-        ax1.set_title('the rate: %f' % rates[i_p])
+        ax1 = fig1.add_subplot(num, 1, 1+i_p, aspect='equal')
+        ax1.set_title('the rate: %s' % str(rates[i_p]))
         output_obj = list()
-        # color_list = ['red', 'blue', 'yellow', 'black']
         for v in position:
             output_obj.append(patches.Rectangle((v[0], v[1]), v[2], v[3], edgecolor='m', facecolor='blue', lw=border))
 
         for p in output_obj:
             ax1.add_patch(p)
+            # 计算显示位置
+            rx, ry = p.get_xy()
+            cx = rx + p.get_width() / 2.0
+            cy = ry + p.get_height() / 2.0
+            # 找到对应的序号
+            p_id = -1
+            if (p.get_width(), p.get_height()) in shapes:
+                p_id = shapes.index((p.get_width(), p.get_height()))
+            if (p.get_height(), p.get_width()) in shapes:
+                p_id = shapes.index((p.get_height(), p.get_width()))
+
+            ax1.annotate(p_id, (cx, cy), color='w', weight='bold',
+                         fontsize=6, ha='center', va='center')
 
         ax1.set_xlim(0, width)
         ax1.set_ylim(0, height)
         i_p += 1
 
-    fig1.savefig('%s.png' % path, dpi=200)
+    fig1.savefig('%s.png' % path)

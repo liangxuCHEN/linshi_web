@@ -3,6 +3,6 @@ from myApi.models import Userate
 
 
 class UseRateAdmin(admin.ModelAdmin):
-    list_display = ('created', 'name', 'rate')
+    list_display = ('created', 'rate', 'name')
 
 admin.site.register(Userate, UseRateAdmin)
