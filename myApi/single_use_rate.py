@@ -1,40 +1,12 @@
 # encoding=utf8
-import matplotlib.patches as patches
-from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
-from matplotlib.figure import Figure
 import copy
+from package_tools import use_rate, draw_one_pic
 
 """
 计算一个矩形组件的使用率
 输入组件尺寸和板材尺寸
 返回使用率和排列方式
 """
-
-
-def use_rate(use_place, width, height):
-    total_use = 0
-    for b_x, b_y, w, h in use_place:
-        total_use += w * h
-    return float(int(float(total_use)/width/height * 100))/100
-
-
-def draw_the_pic(position, width, height, border=0, filename=None):
-    fig1 = Figure(figsize=(12, 6))
-    FigureCanvas(fig1)
-    ax1 = fig1.add_subplot(111)
-    output_obj = list()
-    # color_list = ['red', 'blue', 'yellow', 'black']
-    index_v = 0
-    for v in position:
-        output_obj.append(patches.Rectangle((v[0], v[1]), v[2], v[3], edgecolor='m', label='Label',
-                                            facecolor='blue', lw=border))
-        index_v += 1
-
-    for p in output_obj:
-        ax1.add_patch(p)
-    ax1.set_xlim(0, width)
-    ax1.set_ylim(0, height)
-    fig1.savefig('%s.png' % filename, dpi=200)
 
 
 def update_empty_place(solution, shape_x, shape_y, border):
@@ -163,11 +135,33 @@ def find_empty_place(shape_x, solution, border):
     return empty_place
 
 
-def main_process(data, filename):
+def use_rate_data_is_valid(data):
+    try:
+        shape_x = int(data['shape_x'])
+        shape_y = int(data['shape_y'])
+        WIDTH = int(data['width'])
+        HEIGHT = int(data['height'])
+        BORDER = float(data['border'])
+    except ValueError:
+        return {'error': True, 'info': u'输入类型错误，输入值必须是数值类型'}
+
+    if shape_x <= 0 or shape_y <= 0 or WIDTH <= 0 or HEIGHT <= 0:
+        return {'error': True, 'info': u'输入尺寸数值错误，尺寸输入值必须大于零'}
+    if shape_x > WIDTH or shape_y > WIDTH:
+        return {'error': True, 'info': u'输入尺寸数值错误，组件尺寸必须小于板材'}
+    if BORDER < 0:
+        return {'error': True, 'info': u'输入尺寸数值错误，组件间隙不能小于零'}
+    return {'error': False}
+
+
+def main_process(data, pathname):
     shape_x = int(data['shape_x'])
     shape_y = int(data['shape_y'])
     WIDTH = int(data['width'])
     HEIGHT = int(data['height'])
+    # 防止输入长宽位置错，自动调整
+    if WIDTH < HEIGHT:
+        WIDTH, HEIGHT = HEIGHT, WIDTH
     BORDER = float(data['border'])
     is_texture = int(data['is_texture'])
     is_vertical = int(data['is_vertical'])
@@ -207,25 +201,9 @@ def main_process(data, filename):
             else:
                 break
 
-    draw_the_pic(situation, WIDTH, HEIGHT, filename=filename)
+    rate = use_rate(situation, WIDTH, HEIGHT)
+    title = u'组件尺寸：%d x %d，板材：%d x %d' % (shape_x, shape_y, WIDTH, HEIGHT)
+    draw_one_pic([situation], [rate], title, WIDTH, HEIGHT, path=pathname)
 
-    return use_rate(situation, WIDTH, HEIGHT)
+    return rate
 
-
-def use_rate_data_is_valid(data):
-    try:
-        shape_x = int(data['shape_x'])
-        shape_y = int(data['shape_y'])
-        WIDTH = int(data['width'])
-        HEIGHT = int(data['height'])
-        BORDER = float(data['border'])
-    except ValueError:
-        return {'error': True, 'info': u'输入类型错误，输入值必须是数值类型'}
-
-    if shape_x <= 0 or shape_y <= 0 or WIDTH <= 0 or HEIGHT <= 0:
-        return {'error': True, 'info': u'输入尺寸数值错误，尺寸输入值必须大于零'}
-    if shape_x > WIDTH or shape_y > WIDTH:
-        return {'error': True, 'info': u'输入尺寸数值错误，组件尺寸必须小于板材'}
-    if BORDER < 0:
-        return {'error': True, 'info': u'输入尺寸数值错误，组件间隙不能小于零'}
-    return {'error': False}

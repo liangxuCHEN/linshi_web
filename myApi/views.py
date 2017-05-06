@@ -1,11 +1,13 @@
 # encoding=utf-8
 import json
 import os
+import time
 
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from myApi.single_use_rate import main_process, use_rate_data_is_valid
+from myApi.package_function import main_process as production_rate
 from django_api import settings
 from myApi.models import Userate
 
@@ -47,8 +49,6 @@ def single_use_rate(request):
         return render(request, 'use_rate.html')
 
 
-
-@csrf_exempt
 def single_use_rate_demo(request):
     if request.method == 'POST':
         data = request.POST
@@ -90,6 +90,40 @@ def single_use_rate_demo(request):
         return render(request, 'use_rate_demo.html')
 
 
+@csrf_exempt
+def product_use_rate(request):
+    if request.method == 'POST':
+        filename = str(time.time()).split('.')[0]
+        path = os.path.join(settings.BASE_DIR, 'static')
+        path = os.path.join(path, filename)
+        res = production_rate(request.POST, pathname=path)
+        if res['error']:
+            return render(request, 'product_use_rate.html', res)
+        else:
+            content = {
+                'rate': res['rate_list'],
+                'prefix_name': 'static/%s.png' % filename,
+            }
+            return HttpResponse(json.dumps(content), content_type="application/json")
+    else:
+        return render(request, 'product_use_rate.html')
 
 
+@csrf_exempt
+def product_use_rate_demo(request):
+    if request.method == 'POST':
+        filename = str(time.time()).split('.')[0]
+        path = os.path.join(settings.BASE_DIR, 'static')
+        path = os.path.join(path, filename)
+        res = production_rate(request.POST, pathname=path)
+        if res['error']:
+            return render(request, 'product_use_rate_demo.html', res)
+        else:
+            content = {
+                'rates': res['rate_list'],
+                'prefix_name': 'static/%s.png' % filename,
+            }
+            return render(request, 'product_use_rate_demo.html', content)
+    else:
+        return render(request, 'product_use_rate_demo.html')
 
