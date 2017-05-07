@@ -806,6 +806,6 @@ def main_process(data, pathname):
     title = 'Average rate : %s' % str(avg_rate)
 
     # 把排版结果显示并且保存
-    draw_one_pic(shape_list, situation_list, rate_list, title, WIDTH, HEIGHT, path=pathname)
+    draw_one_pic(situation_list, rate_list, title, WIDTH, HEIGHT, path=pathname, shapes=shape_list)
 
-    return {'error': False, 'rate_list': rate_list}
+    return {'error': False, 'rate': avg_rate}

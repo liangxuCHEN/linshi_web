@@ -202,8 +202,10 @@ def main_process(data, pathname):
                 break
 
     rate = use_rate(situation, WIDTH, HEIGHT)
-    title = u'组件尺寸：%d x %d，板材：%d x %d' % (shape_x, shape_y, WIDTH, HEIGHT)
-    draw_one_pic([situation], [rate], title, WIDTH, HEIGHT, path=pathname)
+    try:
+        draw_one_pic([situation], [rate], ' ', WIDTH, HEIGHT, path=pathname)
+    except Exception as e:
+        return {'error': True, 'info': u'作图过程中出错，没有图片', 'rate':rate}
 
-    return rate
+    return {'rate':rate, 'error':False}
 
