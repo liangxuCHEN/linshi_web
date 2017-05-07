@@ -400,8 +400,7 @@ def find_empty_place(shape_x, shape_y, solution, end_point, border):
                         empty_list.append((
                             end_point[0],
                             end_point[1],
-                            solution['place'][0] + (solution['y'] * shape_y + solution['x'] * shape_x + (
-                                solution['y'] + solution['x'] - 1) * border),
+                            solution['place'][2],
                             end_point[3] + border
                         ))
                     # 最边没有利用的地方， 外面算要加间隙
@@ -410,7 +409,7 @@ def find_empty_place(shape_x, shape_y, solution, end_point, border):
                             solution['y'] + solution['x']) * border),
                         solution['place'][1],
                         solution['place'][2],
-                        end_point[3] + border,
+                        end_point[1],
                     ))
             else:
                 # 排放的图形刚好整齐在一行或一列结束
@@ -711,60 +710,90 @@ def main_process(data, pathname):
     empty_place_list = [(0, 0, WIDTH, HEIGHT)]  # 空余地方
     situation_list = list()  # 记录每一块板的排列情况
     is_new = True  # 是否新加一块板
+    num_platform = 0
     while len(all_shapes) > 0:
         # 初始化参数
         is_done = False
         if is_new:
-            # 新增加一块板材
             tmp_situation = list()
             empty_place_list = [(0, 0, WIDTH, HEIGHT)]
             is_new = False
-        tmp_empty_place = copy.deepcopy(empty_place_list)
-        index_shape = 0
-
-        for place in tmp_empty_place:
-            # 在遍历每一个空余地方找最优解
+            num_platform += 1
+            # 在新空间里面放入最大面积的
             for shape in shape_list:
                 # 如果已经没有需要安排的图形就跳过
                 if shape not in all_shapes:
                     continue
                 else:
                     index_shape = all_shapes.index(shape)
-                    # 主要函数，找到排列分布的解
+                    sub_tmp_situation, sub_empty_place_list = find_one_best(
+                        shape[0],
+                        shape[1],
+                        (0, 0, WIDTH, HEIGHT),
+                        all_shapes.count(shape),    # 找剩余的图片数量
+                        is_texture,
+                        BORDER
+                    )
+                    empty_place_list.remove((0, 0, WIDTH, HEIGHT))
+                    empty_place_list += sub_empty_place_list
+                    empty_place_list = tidy_empty_place(empty_place_list)
+                    # print(index_shape, len(sub_tmp_situation), shape)
+                    for i in range(0, len(sub_tmp_situation)):
+                        all_shapes.pop(index_shape)
+                    tmp_situation += sub_tmp_situation
+                    break
+
+        # 剩余空间里面找最大利用率的图形
+        tmp_empty_place = copy.deepcopy(empty_place_list)
+        index_shape = 0
+        for place in tmp_empty_place:
+            # 在特定空间找最优解
+            best_rate = 0
+            best_situation = None
+            best_empty_place = None
+            best_index = None
+            best_shape = None
+            for shape in shape_list:
+                # 如果已经没有需要安排的图形就跳过
+                if shape not in all_shapes:
+                    continue
+                else:
+                    # 找最优解，保留最优解
+                    index_shape = all_shapes.index(shape)
                     sub_tmp_situation, sub_empty_place_list = find_one_best(
                         shape[0],
                         shape[1],
                         place,
-                        all_shapes.count(shape),  # 找剩余的图片数量
+                        all_shapes.count(shape),    # 找剩余的图片数量
                         is_texture,
                         BORDER
                     )
-
                     if len(sub_tmp_situation) > 0:
-                        # 如果有解，更新空余地方，然后跳出循环，继续下一个
+                        # 如果有解
                         is_done = True
-                        empty_place_list.remove(place)
-                        empty_place_list += sub_empty_place_list
-                        empty_place_list = tidy_empty_place(empty_place_list)
-                        break
+                        tmp_rate = use_rate(sub_tmp_situation, place[2] - place[0], place[3] - place[1])
+                        if tmp_rate > best_rate:
+                            best_situation = sub_tmp_situation
+                            best_rate = tmp_rate
+                            best_empty_place = sub_empty_place_list
+                            best_index = index_shape
+                            best_shape = shape
+
             if is_done:
-                # 如果有解跳出循环，为了更新等待安排的矩形列表
+                empty_place_list.remove(place)
+                empty_place_list += best_empty_place
+                empty_place_list = tidy_empty_place(empty_place_list)
                 break
         if is_done:
-            # 把所有已经找到安排的矩形剔除
-            # print(index_shape, len(sub_tmp_situation))
-            for i in range(0, len(sub_tmp_situation)):
-                all_shapes.pop(index_shape)
-            # 更新排版情况
-            tmp_situation += sub_tmp_situation
+            # 把所有已经找到安排的图形剔除
+            # print(best_index, len(best_situation), best_shape)
+            for i in range(0, len(best_situation)):
+                all_shapes.pop(best_index)
+            tmp_situation += best_situation
         else:
-            # 一块板材已经排满，其他空余地方已经不能利用，这时候需要新加一块
             is_new = True
-            # 把这块板排版情况安放到结果列表
             situation_list.append(tmp_situation)
-    else:
-        # 最后把这块板排版情况安放到结果列表
-        situation_list.append(tmp_situation)
+
 
     # 计算使用率
     rate_list = list()

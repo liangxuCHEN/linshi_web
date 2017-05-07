@@ -43,7 +43,7 @@ def can_merge_place(place_v1, place_v2):
         if place_v1[3] > place_v2[3]:
             return True, (place_v2[0], place_v2[1], place_v2[2], place_v1[3])
         else:
-            return True, (place_v2[0], place_v2[3], place_v2[2], place_v1[1])
+            return True, (place_v2[0], place_v1[1], place_v2[2], place_v2[3])
     if place_v1[1] == place_v2[1] and place_v1[3] == place_v2[3] and (
                     place_v1[0] == place_v2[2] or place_v1[2] == place_v2[0]):
         if place_v1[2] > place_v2[2]:
@@ -81,11 +81,16 @@ def tidy_shape(shapes, shapes_num, texture, vertical):
             tmp_list.append((shape_x, shape_y))
 
     # 根据矩形的面积有大到小排列，
-    for i in range(len(tmp_list) - 1, 0, -1):
-        for j in range(0, i):
-            if tmp_list[j][1] * tmp_list[j][0] < tmp_list[j + 1][1] * tmp_list[j + 1][0]:
+    print tmp_list
+    for i in range(len(tmp_list), 1, -1):
+        for j in range(0, i-1):
+            # 长度大于宽带，比较方式就是看长的边长，若长相等，看宽
+            if tmp_list[j][1] < tmp_list[j + 1][1] or (
+                            tmp_list[j][1] == tmp_list[j + 1][1] and tmp_list[j][0] < tmp_list[j + 1][0]):
                 tmp_list[j], tmp_list[j + 1] = tmp_list[j + 1], tmp_list[j]
                 shapes_num[j], shapes_num[j + 1] = shapes_num[j + 1], shapes_num[j]
+
+    print tmp_list
 
     # 结合数量，合并成一个新的队列
     index_shape = 0
