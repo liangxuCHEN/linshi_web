@@ -81,7 +81,6 @@ def tidy_shape(shapes, shapes_num, texture, vertical):
             tmp_list.append((shape_x, shape_y))
 
     # 根据矩形的面积有大到小排列，
-    print tmp_list
     for i in range(len(tmp_list), 1, -1):
         for j in range(0, i-1):
             # 长度大于宽带，比较方式就是看长的边长，若长相等，看宽
@@ -89,8 +88,6 @@ def tidy_shape(shapes, shapes_num, texture, vertical):
                             tmp_list[j][1] == tmp_list[j + 1][1] and tmp_list[j][0] < tmp_list[j + 1][0]):
                 tmp_list[j], tmp_list[j + 1] = tmp_list[j + 1], tmp_list[j]
                 shapes_num[j], shapes_num[j + 1] = shapes_num[j + 1], shapes_num[j]
-
-    print tmp_list
 
     # 结合数量，合并成一个新的队列
     index_shape = 0
@@ -103,14 +100,22 @@ def tidy_shape(shapes, shapes_num, texture, vertical):
 
 
 def draw_one_pic(positions, rates, title, width, height, path, border=0, shapes=None):
-    # 写一个空白文档，说明情况
+    # 多个图像需要处理
+
     if shapes is not None:
+        # 写一个空白文档，说明情况
         with open('%s_desc.txt' % path, 'w') as f:
             f.write('# : %d x %d \n' % (width, height))
             for i_shape in range(0, len(shapes)):
                 f.write('%d : %d x %d \n' % (i_shape, shapes[i_shape][0], shapes[i_shape][1]))
 
-    i_p = 0
+        # 返回唯一的排版列表，以及数量
+        num_list = find_the_same_position(positions,shapes)
+    else:
+        # 单个图表
+        num_list = [1]
+    i_p = 0     # 记录板材索引
+    i_pic = 1   # 记录图片的索引
     num = len(positions)
     fig_height = num * 4
     fig1 = Figure(figsize=(8, fig_height))
@@ -119,31 +124,44 @@ def draw_one_pic(positions, rates, title, width, height, path, border=0, shapes=
     FigureCanvas(fig1)
 
     for position in positions:
-        ax1 = fig1.add_subplot(num, 1, 1+i_p, aspect='equal')
-        ax1.set_title('the rate: %s' % str(rates[i_p]))
-        output_obj = list()
-        for v in position:
-            output_obj.append(patches.Rectangle((v[0], v[1]), v[2], v[3], edgecolor='m', facecolor='blue', lw=border))
+        if num_list[i_p] != 0:
+            ax1 = fig1.add_subplot(num, 1, i_pic, aspect='equal')
+            i_pic += 1
+            ax1.set_title('the rate: %s, Qty: %d' % (str(rates[i_p]), num_list[i_p]))
+            output_obj = list()
+            for v in position:
+                output_obj.append(patches.Rectangle((v[0], v[1]), v[2], v[3], edgecolor='m', facecolor='blue', lw=border))
 
-        for p in output_obj:
-            ax1.add_patch(p)
-            # 计算显示位置
-            if shapes is not None:
-                rx, ry = p.get_xy()
-                cx = rx + p.get_width() / 2.0
-                cy = ry + p.get_height() / 2.0
-                # 找到对应的序号
-                p_id = -1
-                if (p.get_width(), p.get_height()) in shapes:
-                    p_id = shapes.index((p.get_width(), p.get_height()))
-                if (p.get_height(), p.get_width()) in shapes:
-                    p_id = shapes.index((p.get_height(), p.get_width()))
+            for p in output_obj:
+                ax1.add_patch(p)
+                # 计算显示位置
+                if shapes is not None:
+                    rx, ry = p.get_xy()
+                    cx = rx + p.get_width() / 2.0
+                    cy = ry + p.get_height() / 2.0
+                    # 找到对应的序号
+                    p_id = -1
+                    if (p.get_width(), p.get_height()) in shapes:
+                        p_id = shapes.index((p.get_width(), p.get_height()))
+                    if (p.get_height(), p.get_width()) in shapes:
+                        p_id = shapes.index((p.get_height(), p.get_width()))
 
-                ax1.annotate(p_id, (cx, cy), color='w', weight='bold',
-                             fontsize=6, ha='center', va='center')
+                    ax1.annotate(p_id, (cx, cy), color='w', weight='bold',
+                                 fontsize=6, ha='center', va='center')
 
-        ax1.set_xlim(0, width)
-        ax1.set_ylim(0, height)
+            ax1.set_xlim(0, width)
+            ax1.set_ylim(0, height)
         i_p += 1
 
     fig1.savefig('%s.png' % path)
+
+
+def find_the_same_position(positions, shapes):
+    # 初始化，默认每个都不一样，数量都是1
+    num_list = [1] * len(positions)
+    for i in range(len(positions)-1, 0, -1):
+        for j in range(0, i):
+            if positions[i] == positions[j] and num_list[j] != 0:
+                num_list[i] += 1
+                num_list[j] = 0
+    return num_list
