@@ -3,3 +3,5 @@
 .idea
 *.png
 *.txt
+db.sqlite3
+.gitignore

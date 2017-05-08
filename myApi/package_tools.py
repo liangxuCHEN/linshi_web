@@ -110,13 +110,13 @@ def draw_one_pic(positions, rates, title, width, height, path, border=0, shapes=
                 f.write('%d : %d x %d \n' % (i_shape, shapes[i_shape][0], shapes[i_shape][1]))
 
         # 返回唯一的排版列表，以及数量
-        num_list = find_the_same_position(positions,shapes)
+        num_list = find_the_same_position(positions, shapes)
     else:
         # 单个图表
         num_list = [1]
     i_p = 0     # 记录板材索引
     i_pic = 1   # 记录图片的索引
-    num = len(positions)
+    num = len(num_list)
     fig_height = num * 4
     fig1 = Figure(figsize=(8, fig_height))
     fig1.suptitle(title, fontsize=12, fontweight='bold')
