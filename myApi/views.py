@@ -108,11 +108,12 @@ def product_use_rate(request):
         path = os.path.join(path, filename)
         res = production_rate(request.POST, pathname=path)
         if res['error']:
-            return render(request, 'product_use_rate.html', res)
+            return HttpResponse(json.dumps(res), content_type="application/json")
         else:
             content = {
                 'rate': res['rate'],
-                'prefix_name': 'static/%s.png' % filename,
+                'picture': 'static/%s.png' % filename,
+                'describe': 'static/%s_desc.txt' % filename,
             }
             return HttpResponse(json.dumps(content), content_type="application/json")
     else:
@@ -131,7 +132,8 @@ def product_use_rate_demo(request):
         else:
             content = {
                 'rates': res['rate'],
-                'prefix_name': 'static/%s.png' % filename,
+                'picture': 'static/%s.png' % filename,
+                'shape_data': request.POST['shape_data'],
             }
             return render(request, 'product_use_rate_demo.html', content)
     else:

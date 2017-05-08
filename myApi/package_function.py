@@ -654,7 +654,7 @@ def get_shape_data(data, width):
         except:
             return {
                 'error': True,
-                'info': u'输入的格式不对, 一组数据之间用空格，数据之间用分号;，最后结尾不要放分号，而且要用英文标点'
+                'info': u'输入的格式不对, 一组数据之间用空格, 数据之间用分号<;>, 最后结尾不要放分号<;>, 而且要用英文标点'
             }
         if x > width or y > width:
             return {'error': True, 'info': u'输入尺寸数值错误，组件尺寸必须小于板材'}

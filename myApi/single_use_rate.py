@@ -207,5 +207,5 @@ def main_process(data, pathname):
     except Exception as e:
         return {'error': True, 'info': u'作图过程中出错，没有图片', 'rate':rate}
 
-    return {'rate':rate, 'error':False}
+    return {'rate': rate, 'error': False}
 
