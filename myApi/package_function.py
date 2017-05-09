@@ -1,7 +1,7 @@
 # encoding=utf8
 
 import copy
-from package_tools import use_rate, draw_one_pic, can_merge_place, tidy_shape
+from package_tools import use_rate, draw_one_pic, can_merge_place, tidy_shape, find_small_shape
 
 """
 基于V3上的优化
@@ -85,6 +85,7 @@ def update_empty_place(solution, shape_x, shape_y, num_shape, border):
                     end_point['model'] = 'no_tidy'
                     res.pop()
                     return res, end_point
+
             total_h += shape_y + border
 
         # 选择90度矩形继续摆放
@@ -288,7 +289,25 @@ def find_model(shape_x, shape_y, place, border):
         return solution_1
 
 
-def find_empty_place(shape_x, shape_y, solution, end_point, border):
+def is_valid_point(place, width, height):
+    """
+    判断计算出来的坐标是否合理
+    :param place:
+    :param width:
+    :param height:
+    :return:
+    """
+    place = list(place)
+    if place[2] > width:
+        place[2] = width
+    if place[3] > height:
+        place[3] = height
+    if place[0] >= place[2] or place[1] >= place[3]:
+        return False, None
+    return True, tuple(place)
+
+
+def find_empty_place(shape_x, shape_y, solution, end_point, border, width, height):
     """
     根据排列方案，找到新的空余的空间
     :param shape_x: 矩形的边
@@ -331,116 +350,157 @@ def find_empty_place(shape_x, shape_y, solution, end_point, border):
         # 是否有结束的点，没有代表这块空间排放的矩形数量少于需要排放的空间
         if end_point is None:
             if solution['x'] > 0:
-                empty_list.append((
+                is_valid, em_place = is_valid_point((
                     solution['place'][0],
                     solution['place'][3] - int(solution['length'] + border) % int(shape_y + border) + border,
                     solution['place'][0] + solution['x'] * shape_x + (solution['x'] - 1) * border,
                     solution['place'][3]
-                ))
+                ), width, height)
+                if is_valid:
+                    empty_list.append(em_place)
+
             if solution['y'] > 0:
-                empty_list.append((
+                is_valid, em_place = is_valid_point((
                     solution['place'][0] + solution['x'] * shape_x + border * solution['x'],
                     solution['place'][3] - int(solution['length'] + border) % int(shape_x + border) + border,
                     solution['place'][0] + solution['x'] * shape_x + solution['y'] * shape_y + (
                         solution['x'] + solution['y'] - 1) * border,
                     solution['place'][3]
-                ))
-            empty_list.append((
+                ), width, height)
+                if is_valid:
+                    empty_list.append(em_place)
+
+            is_valid, em_place = is_valid_point((
                 solution['place'][0] + (solution['y'] * shape_y + solution['x'] * shape_x + (
                     solution['y'] + solution['x'] - 1) * border) + border,
                 solution['place'][1],
                 solution['place'][2],
                 solution['place'][3],
-            ))
+            ), width, height)
+            if is_valid:
+                empty_list.append(em_place)
         else:
             # 有结束点的情况，其中no_tidy 表示结束点在一行或一列之间
             if model == 'no_tidy':
                 if end_point[0] < solution['place'][0] + solution['x'] * shape_x + border * solution['x']:
                     # 另一边是空的
-                    empty_list.append((
+                    is_valid, em_place = is_valid_point((
                         solution['place'][0] + solution['x'] * shape_x + border * solution['x'],
                         solution['place'][1],
                         solution['place'][2],
                         solution['place'][3],
-                    ))
+                    ), width, height)
+                    if is_valid:
+                        empty_list.append(em_place)
+
                     # 有东西的一边,结束那一部分
-                    empty_list.append((
+                    is_valid, em_place = is_valid_point((
                         end_point[0],
                         end_point[1],
                         solution['place'][0] + solution['x'] * shape_x + border * solution['x'],
                         solution['place'][3],
-                    ))
+                    ), width, height)
+                    if is_valid:
+                        empty_list.append(em_place)
+
                     # 有东西的一边, 前面排好部分
                     if solution['x'] > 0:
-                        empty_list.append((
+                        is_valid, em_place = is_valid_point((
                             solution['place'][0],
                             end_point[3] + border,
                             end_point[0],
                             solution['place'][3]
-                        ))
+                        ), width, height)
+                        if is_valid:
+                            empty_list.append(em_place)
 
                 else:
                     # 一边放满的
                     if solution['x'] > 0:
-                        empty_list.append((
+                        is_valid, em_place = is_valid_point((
                             solution['place'][0],
                             solution['place'][3] - int(solution['length'] + border) % int(shape_y + border) + border,
                             solution['place'][0] + solution['x'] * shape_x + (solution['x'] - 1) * border,
                             solution['place'][3]
-                        ))
+                        ), width, height)
+                        if is_valid:
+                            empty_list.append(em_place)
+
                     # 另一边没有放满的
+                    # TODO : 只有一列的情况
                     if solution['y'] > 0:
-                        empty_list.append((
+                        is_valid, em_place = is_valid_point((
                             solution['place'][0] + solution['x'] * shape_x + border * solution['x'],
                             end_point[3] + border,
                             solution['place'][2],
                             solution['place'][3]
-                        ))
+                        ), width, height)
+                        if is_valid:
+                            empty_list.append(em_place)
+
                         # 里面没有用的空间不需要加间隙
-                        empty_list.append((
+                        is_valid, em_place = is_valid_point((
                             end_point[0],
                             end_point[1],
                             solution['place'][2],
                             end_point[3] + border
-                        ))
+                        ), width, height)
+                        if is_valid:
+                            empty_list.append(em_place)
+
                     # 最边没有利用的地方， 外面算要加间隙
-                    empty_list.append((
+                    is_valid, em_place = is_valid_point((
                         solution['place'][0] + (solution['y'] * shape_y + solution['x'] * shape_x + (
                             solution['y'] + solution['x']) * border),
                         solution['place'][1],
                         solution['place'][2],
                         end_point[1],
-                    ))
+                    ), width, height)
+                    if is_valid:
+                        empty_list.append(em_place)
             else:
                 # 排放的图形刚好整齐在一行或一列结束
                 if end_point[0] < solution['place'][0] + solution['x'] * shape_x + border * solution['x']:
                     # 另一边是空的
-                    empty_list.append((
+                    is_valid, em_place = is_valid_point((
                         solution['place'][0] + solution['x'] * shape_x + border * solution['x'],
                         solution['place'][1],
                         solution['place'][2],
                         solution['place'][3],
-                    ))
-                    empty_list.append(end_point)
+                    ), width, height)
+                    if is_valid:
+                        empty_list.append(em_place)
+
+                    is_valid, em_place = is_valid_point(end_point, width, height)
+                    if is_valid:
+                        empty_list.append(em_place)
                 else:
                     if solution['x'] > 0:
-                        empty_list.append((
+                        is_valid, em_place = is_valid_point((
                             solution['place'][0],
                             solution['place'][3] - int(solution['length'] + border) % int(shape_y + border) + border,
                             solution['place'][0] + solution['x'] * shape_x + (solution['x'] - 1) * border,
                             solution['place'][3]
-                        ))
+                        ), width, height)
+                        if is_valid:
+                            empty_list.append(em_place)
 
                     if solution['y'] > 0:
                         # 边框剩下
-                        empty_list.append((
+                        is_valid, em_place = is_valid_point((
                             solution['place'][0] + solution['x'] * shape_x + solution['y'] * shape_y + (
                                 solution['x'] + solution['y']) * border,
                             solution['place'][1],
                             solution['place'][2],
                             solution['place'][3]
-                        ))
-                    empty_list.append(end_point)
+                        ), width, height)
+                        if is_valid:
+                            empty_list.append(em_place)
+
+                    is_valid, em_place = is_valid_point(end_point, width, height)
+                    if is_valid:
+                        empty_list.append(em_place)
+
     else:
         # 竖直模式
         # 计算分割线
@@ -459,122 +519,160 @@ def find_empty_place(shape_x, shape_y, solution, end_point, border):
         # 是否有结束点
         if end_point is None:
             if solution['x'] > 0:
-                empty_list.append((
+                is_valid, em_place = is_valid_point((
                     solution['place'][2] - int(solution['length'] + border) % int(shape_y + border) + border,
                     solution['place'][1],
                     solution['place'][2],
                     solution['place'][1] + solution['x'] * shape_x + (solution['x'] - 1) * border
-                ))
+                ), width, height)
+                if is_valid:
+                    empty_list.append(em_place)
+
             if solution['y'] > 0:
-                empty_list.append((
+                is_valid, em_place = is_valid_point((
                     solution['place'][2] - int(solution['length'] + border) % int(shape_x + border) + border,
                     solution['place'][1] + solution['x'] * shape_x + border * solution['x'],
                     solution['place'][2],
                     solution['place'][1] + solution['x'] * shape_x + solution['y'] * shape_y + (
                         solution['y'] + solution['x'] - 1) * border
-                ))
+                ), width, height)
+                if is_valid:
+                    empty_list.append(em_place)
 
-            empty_list.append((
+            is_valid, em_place = is_valid_point((
                 solution['place'][0],
                 solution['place'][1] + (solution['y'] * shape_y + solution['x'] * shape_x + (
                     solution['y'] + solution['x'] - 1) * border) + border,
                 solution['place'][2],
                 solution['place'][3],
-            ))
+            ), width, height)
+            if is_valid:
+                empty_list.append(em_place)
+
         else:
             # 有结束点， 在一行或一列之间
             if model == 'no_tidy':
                 if end_point[1] < solution['place'][1] + solution['x'] * shape_x + border * solution['x']:
                     # 另一边是空的
-                    empty_list.append((
+                    is_valid, em_place = is_valid_point((
                         solution['place'][0],
                         solution['place'][1] + solution['x'] * shape_x + border * solution['x'],
                         solution['place'][2],
                         solution['place'][3],
-                    ))
+                    ), width, height)
+                    if is_valid:
+                        empty_list.append(em_place)
+
                     # 有东西的一边
-                    empty_list.append((
+                    is_valid, em_place = is_valid_point((
                         end_point[0],
                         end_point[1],
                         solution['place'][2],
-                        end_point[3],
-                    ))
+                        solution['place'][1] + solution['x'] * shape_x + border * solution['x'],
+                    ), width, height)
+                    if is_valid:
+                        empty_list.append(em_place)
+
                     # 有东西的一边, 前面排好部分
-                    if solution['x'] > 0:
-                        empty_list.append((
-                            end_point[2] + border,
-                            solution['place'][1],
-                            solution['place'][2],
-                            end_point[1],
-                        ))
+                    is_valid, em_place = is_valid_point((
+                        end_point[2] + border,
+                        solution['place'][1],
+                        solution['place'][2],
+                        end_point[1],
+                    ), width, height)
+                    if is_valid:
+                        empty_list.append(em_place)
                 else:
                     # 还没有放完的空间
-                    empty_list.append((
+                    is_valid, em_place = is_valid_point((
                         end_point[0],
                         end_point[1],
                         solution['place'][2],
                         solution['place'][3],
-                    ))
+                    ), width, height)
+                    if is_valid:
+                        empty_list.append(em_place)
+
                     # 已经放东西后还剩余的地方
                     if solution['x'] > 0:
-                        empty_list.append((
+                        is_valid, em_place = is_valid_point((
                             solution['place'][2] - int(solution['length'] + border) % int(shape_y + border) + border,
                             solution['place'][1],
                             solution['place'][2],
                             solution['place'][1] + solution['x'] * shape_x + (solution['x'] - 1) * border
-                        ))
+                        ), width, height)
+                        if is_valid:
+                            empty_list.append(em_place)
+
                     if solution['y'] > 0:
-                        empty_list.append((
+                        is_valid, em_place = is_valid_point((
                             end_point[2] + border,
                             solution['place'][1] + solution['x'] * shape_x + border * solution['x'],
                             solution['place'][2],
                             end_point[1] - border,
-                        ))
+                        ), width, height)
+                        if is_valid:
+                            empty_list.append(em_place)
+
                         # 已经放置的顶部部分
-                        empty_list.append((
+                        is_valid, em_place = is_valid_point((
                             solution['place'][0],
                             end_point[3] + border,
                             end_point[0],
                             solution['place'][3]
-                        ))
+                        ), width, height)
+                        if is_valid:
+                            empty_list.append(em_place)
             else:
                 # 整齐的一行或一列的情况
                 if end_point[1] < solution['place'][1] + solution['x'] * shape_x + border * solution['x']:
                     # 另一边是空的
-                    empty_list.append((
+                    is_valid, em_place = is_valid_point((
                         solution['place'][0],
                         solution['place'][1] + solution['x'] * shape_x + border * solution['x'],
                         solution['place'][2],
                         solution['place'][3],
-                    ))
+                    ), width, height)
+                    if is_valid:
+                        empty_list.append(em_place)
+
                     # 有东西的一边
-                    empty_list.append(end_point)
+                    is_valid, em_place = is_valid_point(end_point, width, height)
+                    if is_valid:
+                        empty_list.append(em_place)
                 else:
                     # 已经放东西后还剩余的地方
                     if solution['x'] > 0:
-                        empty_list.append((
+                        is_valid, em_place = is_valid_point((
                             solution['place'][2] - int(solution['length'] + border) % int(shape_y + border) + border,
                             solution['place'][1],
                             solution['place'][2],
                             solution['place'][1] + solution['x'] * shape_x + solution['x'] * border
-                        ))
+                        ), width, height)
+                        if is_valid:
+                            empty_list.append(em_place)
+
                     # 有东西的一边
                     if solution['y'] > 0:
                         # 边框剩下
-                        empty_list.append((
+                        is_valid, em_place = is_valid_point((
                             solution['place'][0],
                             solution['place'][1] + (solution['y'] * shape_y + solution['x'] * shape_x + (
                                 solution['y'] + solution['x'] - 1) * border) + border,
                             end_point[0],
                             solution['place'][3],
-                        ))
+                        ), width, height)
+                        if is_valid:
+                            empty_list.append(em_place)
                     # 剩余
-                    empty_list.append(end_point)
+                    is_valid, em_place = is_valid_point(end_point, width, height)
+                    if is_valid:
+                        empty_list.append(em_place)
 
     return split_list, empty_list
 
 
-def find_one_best(shape_x, shape_y, place, num_shape, texture, border):
+def find_one_best(shape_x, shape_y, place, num_shape, texture, border, width, height):
     """
     找单个图形的最大利用率
     :param shape_x: 矩形的边
@@ -605,7 +703,7 @@ def find_one_best(shape_x, shape_y, place, num_shape, texture, border):
 
     # 更新空余地方，还需要根据已经排列的图形，再计算
     situation, end_point = update_empty_place(solution, shape_x, shape_y, num_shape, border)
-    split_place, empty_place = find_empty_place(shape_x, shape_y, solution, end_point, border)
+    split_place, empty_place = find_empty_place(shape_x, shape_y, solution, end_point, border, width, height)
     while True and len(situation) < num_shape and texture == 0:
         # 再次判断，找更好的情况
         tmp_situation = list()
@@ -615,7 +713,7 @@ def find_one_best(shape_x, shape_y, place, num_shape, texture, border):
             solution = find_model(shape_x, shape_y, e_place, border)
             sub_tmp_situation, end_point = update_empty_place(solution, shape_x, shape_y, num_shape, border)
             tmp_situation += sub_tmp_situation
-            res = find_empty_place(shape_x, shape_y, solution, end_point, border)
+            res = find_empty_place(shape_x, shape_y, solution, end_point, border, width, height)
             tmp_split_place += res[0]
             tmp_empty_place += res[1]
 
@@ -705,10 +803,12 @@ def main_process(data, pathname):
 
     # 整理数据，矩形从大到小排列，结合数量，得到一个总的需要排列的矩形列表 all_shapes
     # 结合纹理和横竖排列，返回矩形列表 shape_list
-    all_shapes, shape_list = tidy_shape(SHAPE, SHAPE_NUM, is_texture, is_vertical)
+    all_shapes, shape_list, shape_num = tidy_shape(SHAPE, SHAPE_NUM, is_texture, is_vertical)
+    min_shape = find_small_shape(shape_list)   # 最小元素
     # 初始化参数
     empty_place_list = [(0, 0, WIDTH, HEIGHT)]  # 空余地方
     situation_list = list()  # 记录每一块板的排列情况
+    empty_situation_list = list()  # 记录余料情况
     is_new = True  # 是否新加一块板
     num_platform = 0
     while len(all_shapes) > 0:
@@ -732,7 +832,9 @@ def main_process(data, pathname):
                         (0, 0, WIDTH, HEIGHT),
                         all_shapes.count(shape),    # 找剩余的图片数量
                         is_texture,
-                        BORDER
+                        BORDER,
+                        WIDTH,
+                        HEIGHT
                     )
                     empty_place_list.remove((0, 0, WIDTH, HEIGHT))
                     empty_place_list += sub_empty_place_list
@@ -745,14 +847,13 @@ def main_process(data, pathname):
 
         # 剩余空间里面找最大利用率的图形
         tmp_empty_place = copy.deepcopy(empty_place_list)
-        index_shape = 0
         for place in tmp_empty_place:
             # 在特定空间找最优解
             best_rate = 0
             best_situation = None
             best_empty_place = None
             best_index = None
-            best_shape = None
+            # best_shape = None
             for shape in shape_list:
                 # 如果已经没有需要安排的图形就跳过
                 if shape not in all_shapes:
@@ -766,7 +867,9 @@ def main_process(data, pathname):
                         place,
                         all_shapes.count(shape),    # 找剩余的图片数量
                         is_texture,
-                        BORDER
+                        BORDER,
+                        WIDTH,
+                        HEIGHT
                     )
                     if len(sub_tmp_situation) > 0:
                         # 如果有解
@@ -777,7 +880,7 @@ def main_process(data, pathname):
                             best_rate = tmp_rate
                             best_empty_place = sub_empty_place_list
                             best_index = index_shape
-                            best_shape = shape
+                            # best_shape = shape
 
             if is_done:
                 empty_place_list.remove(place)
@@ -793,7 +896,12 @@ def main_process(data, pathname):
         else:
             is_new = True
             situation_list.append(tmp_situation)
+            empty_situation_list.append(get_empty_situation(empty_place_list, min_shape, BORDER))
 
+    else:
+        # 最后一块板
+        situation_list.append(tmp_situation)
+        empty_situation_list.append(get_empty_situation(empty_place_list, min_shape, BORDER))
 
     # 计算使用率
     rate_list = list()
@@ -806,6 +914,27 @@ def main_process(data, pathname):
     title = 'Average rate : %s' % str(avg_rate)
 
     # 把排版结果显示并且保存
-    draw_one_pic(situation_list, rate_list, title, WIDTH, HEIGHT, path=pathname, shapes=shape_list)
+    draw_one_pic(situation_list, rate_list, title, WIDTH, HEIGHT, path=pathname,
+                 shapes=shape_list, shapes_num=shape_num, avg_rate=avg_rate, empty_positions=empty_situation_list)
 
     return {'error': False, 'rate': avg_rate}
+
+
+def get_empty_situation(empty_places, min_shape, border):
+    """
+    把空白的地方转换成画图的格式，如果空白地方最小图形都放不下，就不要了
+    :param empty_places:
+    :param min_shape:
+    :return:
+    """
+    situation_list = list()
+    for place in empty_places:
+        solution = find_model(min_shape[0], min_shape[1], place, border)
+        if solution['x'] != 0 or solution['y'] != 0:
+            situation_list.append((
+                place[0],
+                place[1],
+                place[2] - place[0],
+                place[3] - place[1]
+            ))
+    return situation_list

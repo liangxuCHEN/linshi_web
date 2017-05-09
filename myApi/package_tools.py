@@ -80,7 +80,6 @@ def tidy_shape(shapes, shapes_num, texture, vertical):
                 shape_x, shape_y = shape_y, shape_x
             tmp_list.append((shape_x, shape_y))
 
-    # 根据矩形的面积有大到小排列，
     for i in range(len(tmp_list), 1, -1):
         for j in range(0, i-1):
             # 长度大于宽带，比较方式就是看长的边长，若长相等，看宽
@@ -96,21 +95,59 @@ def tidy_shape(shapes, shapes_num, texture, vertical):
         for num in range(0, shapes_num[index_shape]):
             new_list.append(shape)
         index_shape += 1
-    return new_list, tmp_list
+    return new_list, tmp_list, shapes_num
 
 
-def draw_one_pic(positions, rates, title, width, height, path, border=0, shapes=None):
+def find_small_shape(shape_list):
+    min_size = shape_list[0][0] * shape_list[0][1]
+
+    for j in range(1, len(shape_list)):
+        # 找最小面积
+        if shape_list[j][0] * shape_list[j][1] < min_size:
+            min_size = shape_list[j][0] * shape_list[j][1]
+            min_shape = shape_list[j]
+
+    return min_shape
+
+
+def write_desc_doc(shapes, shapes_num, path, width, height, positions, num_list, rates, avg_rate, empty_positions):
+    """
+    描述这个方案的整体结果的文档
+    """
+    with open('%s_desc.txt' % path, 'w') as f:
+        f.write('# : %d x %d  Qty: %d  Rate: %s \n' % (width, height, len(positions), str(avg_rate)))
+        for i_shape in range(0, len(shapes)):
+            f.write('%d : %d x %d  Qty: %d \n' % (i_shape, shapes[i_shape][0], shapes[i_shape][1], shapes_num[i_shape]))
+        f.write('------------- \n')
+        f.write('Detail: \n')
+        f.write('------------- \n')
+        f.write('#  Rate  Qty  \n')
+        i_pic = 0
+        for i_p in range(0, len(positions)):
+            if num_list[i_p] != 0:
+                f.write('B%d  %s  %d \n' % (i_pic, str(rates[i_p]), num_list[i_p]))
+                i_pic += 1
+                # TODO: 组件在每个板材的位置和数量
+        f.write('------------- \n')
+        f.write('Empty place: \n')
+        f.write('------------- \n')
+        i_place = 0
+        for em_places in empty_positions:
+            for em_place in em_places:
+                f.write('E%d %d x %d \n' % (i_place, em_place[2], em_place[3]))
+                i_place += 1
+
+
+def draw_one_pic(positions, rates, title, width, height, path, border=0,
+                 shapes=None, shapes_num=None, avg_rate=None, empty_positions=None):
     # 多个图像需要处理
 
     if shapes is not None:
-        # 写一个空白文档，说明情况
-        with open('%s_desc.txt' % path, 'w') as f:
-            f.write('# : %d x %d \n' % (width, height))
-            for i_shape in range(0, len(shapes)):
-                f.write('%d : %d x %d \n' % (i_shape, shapes[i_shape][0], shapes[i_shape][1]))
-
         # 返回唯一的排版列表，以及数量
-        num_list = find_the_same_position(positions, shapes)
+        num_list = find_the_same_position(positions)
+        # 写一个说明文档
+        write_desc_doc(shapes, shapes_num, path, width, height, positions, num_list, rates, avg_rate, empty_positions)
+
     else:
         # 单个图表
         num_list = [1]
@@ -120,7 +157,6 @@ def draw_one_pic(positions, rates, title, width, height, path, border=0, shapes=
     fig_height = num * 4
     fig1 = Figure(figsize=(8, fig_height))
     fig1.suptitle(title, fontsize=12, fontweight='bold')
-    fig1.subplots_adjust(bottom=0.1, top=0.95)
     FigureCanvas(fig1)
 
     for position in positions:
@@ -130,7 +166,14 @@ def draw_one_pic(positions, rates, title, width, height, path, border=0, shapes=
             ax1.set_title('the rate: %s, Qty: %d' % (str(rates[i_p]), num_list[i_p]))
             output_obj = list()
             for v in position:
-                output_obj.append(patches.Rectangle((v[0], v[1]), v[2], v[3], edgecolor='m', facecolor='blue', lw=border))
+                output_obj.append(
+                    patches.Rectangle((v[0], v[1]), v[2], v[3], edgecolor='m', facecolor='blue', lw=border))
+
+            if empty_positions is not None:
+                for em_v in empty_positions[i_p]:
+                    output_obj.append(
+                        patches.Rectangle(
+                            (em_v[0], em_v[1]), em_v[2], em_v[3], edgecolor='m', facecolor='yellow', lw=border))
 
             for p in output_obj:
                 ax1.add_patch(p)
@@ -156,7 +199,7 @@ def draw_one_pic(positions, rates, title, width, height, path, border=0, shapes=
     fig1.savefig('%s.png' % path)
 
 
-def find_the_same_position(positions, shapes):
+def find_the_same_position(positions):
     # 初始化，默认每个都不一样，数量都是1
     num_list = [1] * len(positions)
     for i in range(len(positions)-1, 0, -1):
