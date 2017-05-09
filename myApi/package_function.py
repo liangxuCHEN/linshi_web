@@ -427,7 +427,6 @@ def find_empty_place(shape_x, shape_y, solution, end_point, border, width, heigh
                             empty_list.append(em_place)
 
                     # 另一边没有放满的
-                    # TODO : 只有一列的情况
                     if solution['y'] > 0:
                         is_valid, em_place = is_valid_point((
                             solution['place'][0] + solution['x'] * shape_x + border * solution['x'],
