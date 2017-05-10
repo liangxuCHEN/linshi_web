@@ -8,3 +8,13 @@ class Userate(models.Model):
 
     class Meta:
         ordering = ('created',)
+
+
+class ProductRateDetail(models.Model):
+    sheet_name = models.CharField(max_length=40)
+    num_sheet = models.IntegerField()
+    avg_rate = models.FloatField()
+    rates = models.CharField(max_length=256)
+    detail = models.TextField()
+    num_shape = models.CharField(max_length=512)
+    sheet_num_shape = models.CharField(max_length=512)

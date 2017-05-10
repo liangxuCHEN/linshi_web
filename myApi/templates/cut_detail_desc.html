@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}混合排列统计表{% endblock %}
+{% block content %}
+{% if error %}
+    <p>{{error}}</p>
+{% else %}
+    <p>板材尺寸：{{sheet_name}}， 一共使用：{{num_sheet}}， 平均使用率：{{avg_rate}}</p>
+    <table border="1">
+        <thead>
+            <tr>
+                <td>长度</td><td>宽度</td>
+                {% for value in details.0.num_list %}
+                <td> 板材{{ forloop.counter }}</td>
+                {% endfor %}
+                <td>总数</td>
+            </tr>
+        </thead>
+        <tbody>
+            {% for detail in details %}
+            <tr>
+                <td>{{detail.width}}</td><td>{{detail.height}}</td>
+                {% for value in detail.num_list %}
+                <td> {{value}} </td>
+                {% endfor %}
+                <td>{{detail.total}}</td>
+            </tr>
+            {% endfor %}
+
+            <tr><td colspan="2">图形总数：</td>
+            {% for num in sheet_num_shape %}
+                <td>{{num}}</td>
+            {% endfor %}
+            </tr>
+
+            <tr><td colspan="2">利用率：</td>
+            {% for rate in rates %}
+                <td>{{rate}}</td>
+            {% endfor %}
+            </tr>
+        </tbody>
+    </table>
+
+{% endif %}
+{% endblock%}

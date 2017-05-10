@@ -427,6 +427,7 @@ def find_empty_place(shape_x, shape_y, solution, end_point, border, width, heigh
                             empty_list.append(em_place)
 
                     # 另一边没有放满的
+                    # TODO : 只有一列的情况
                     if solution['y'] > 0:
                         is_valid, em_place = is_valid_point((
                             solution['place'][0] + solution['x'] * shape_x + border * solution['x'],
@@ -895,12 +896,13 @@ def main_process(data, pathname):
         else:
             is_new = True
             situation_list.append(tmp_situation)
+            tmp_situation = list()
             empty_situation_list.append(get_empty_situation(empty_place_list, min_shape, BORDER))
-
+            empty_place_list = list()
     else:
-        # 最后一块板
-        situation_list.append(tmp_situation)
-        empty_situation_list.append(get_empty_situation(empty_place_list, min_shape, BORDER))
+        if len(tmp_situation) > 0:
+            situation_list.append(tmp_situation)
+            empty_situation_list.append(get_empty_situation(empty_place_list, min_shape, BORDER))
 
     # 计算使用率
     rate_list = list()
@@ -916,7 +918,18 @@ def main_process(data, pathname):
     draw_one_pic(situation_list, rate_list, title, WIDTH, HEIGHT, path=pathname,
                  shapes=shape_list, shapes_num=shape_num, avg_rate=avg_rate, empty_positions=empty_situation_list)
 
-    return {'error': False, 'rate': avg_rate}
+    # TODO: 返回值丰富
+    result = {
+        'error': False,
+        'rate': avg_rate,
+        'num_sheet': len(situation_list),
+        'detail': detail_text(shape_list, situation_list),
+        'num_shape': str(shape_num)[1:-1],
+        'sheet_num_shape': str([len(s) for s in situation_list])[1:-1],
+        'rates': str(rate_list)[1:-1],
+        'sheet': '%d x %d' % (WIDTH, HEIGHT),
+    }
+    return result
 
 
 def get_empty_situation(empty_places, min_shape, border):
@@ -937,3 +950,22 @@ def get_empty_situation(empty_places, min_shape, border):
                 place[3] - place[1]
             ))
     return situation_list
+
+
+def detail_text(shape_list, situation_list):
+    output_text = ''
+    for shape in shape_list:
+        output_text += '%d,%d' % (shape[1], shape[0])
+
+        for situation in situation_list:
+            # 统计每块板有多少个图形
+            count = 0
+            for position in situation:
+                if shape == (position[2], position[3]) or shape == (position[3], position[2]):
+                    count += 1
+
+            output_text += ',%d' % count
+        # 拆分用‘;’
+        output_text += ';'
+
+    return output_text[:-1]

@@ -3,14 +3,13 @@ import json
 import os
 import time
 
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse
-from django.http import Http404
 from django.views.decorators.csrf import csrf_exempt
 from myApi.single_use_rate import main_process, use_rate_data_is_valid
 from myApi.package_function import main_process as production_rate
 from django_api import settings
-from myApi.models import Userate
+from myApi.models import Userate, ProductRateDetail
 
 
 def home_page(request):
@@ -110,10 +109,25 @@ def product_use_rate(request):
         if res['error']:
             return HttpResponse(json.dumps(res), content_type="application/json")
         else:
+            try:
+                product = ProductRateDetail(
+                    sheet_name=res['sheet'],
+                    num_sheet=res['num_sheet'],
+                    avg_rate=res['rate'],
+                    rates=res['rates'],
+                    detail=res['detail'],
+                    num_shape=res['num_shape'],
+                    sheet_num_shape=res['sheet_num_shape']
+                )
+                product.save()
+                product_id = product.id
+            except:
+                product_id = None
             content = {
-                'rate': res['rate'],
+                'rates': res['rate'],
                 'picture': 'static/%s.png' % filename,
                 'describe': 'static/%s_desc.txt' % filename,
+                'desc_url': 'product/%d' % product_id if product_id is not None else '',
             }
             return HttpResponse(json.dumps(content), content_type="application/json")
     else:
@@ -130,12 +144,66 @@ def product_use_rate_demo(request):
         if res['error']:
             return render(request, 'product_use_rate_demo.html', res)
         else:
+            try:
+                product = ProductRateDetail(
+                    sheet_name=res['sheet'],
+                    num_sheet=res['num_sheet'],
+                    avg_rate=res['rate'],
+                    rates=res['rates'],
+                    detail=res['detail'],
+                    num_shape=res['num_shape'],
+                    sheet_num_shape=res['sheet_num_shape']
+                )
+                product.save()
+                product_id = product.id
+            except:
+                product_id = None
             content = {
                 'rates': res['rate'],
                 'picture': 'static/%s.png' % filename,
                 'shape_data': request.POST['shape_data'],
+                'desc_url': '/product/%d' % product_id if product_id is not None else '',
             }
             return render(request, 'product_use_rate_demo.html', content)
     else:
         return render(request, 'product_use_rate_demo.html')
 
+
+def cut_detail(request, p_id):
+    product = ProductRateDetail.objects.get(pk=p_id)
+    content = {
+        'sheet_name': product.sheet_name,
+        'num_sheet': product.num_sheet,
+        'avg_rate': product.avg_rate
+    }
+    if product is not None:
+        # 图形的数量
+        num_shape = product.num_shape.split(',')
+
+        # 图形的每个板数量
+        details = product.detail.split(';')
+        detail_list = list()
+        i_shape = 0
+        total_shape = 0
+        for detail in details:
+            detail_dic = {}
+            tmp_list = detail.split(',')
+            detail_dic['width'] = tmp_list[0]
+            detail_dic['height'] = tmp_list[1]
+            detail_dic['num_list'] = tmp_list[2:]
+            detail_dic['total'] = num_shape[i_shape]
+            total_shape += int(num_shape[i_shape])
+            i_shape += 1
+            detail_list.append(detail_dic)
+        content['details'] = detail_list
+
+        # 每块板的总图形数目
+        content['sheet_num_shape'] = product.sheet_num_shape.split(',')
+        content['sheet_num_shape'].append(total_shape)
+        # 每块板的利用率
+        content['rates'] = product.rates.split(',')
+        content['rates'].append(content['avg_rate'])
+
+        return render(request, 'cut_detail_desc.html', content)
+    else:
+        return render(request, 'cut_detail_desc.html', {'error': u'没有找到，请检查ID'})
