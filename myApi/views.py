@@ -6,8 +6,8 @@ import time
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
-from myApi.single_use_rate import main_process, use_rate_data_is_valid
-from myApi.package_function import main_process as production_rate
+from myApi.my_rectpack_lib.single_use_rate import main_process, use_rate_data_is_valid
+from myApi.my_rectpack_lib.package_function import main_process as production_rate
 from django_api import settings
 from myApi.models import Userate, ProductRateDetail
 
@@ -117,7 +117,9 @@ def product_use_rate(request):
                     rates=res['rates'],
                     detail=res['detail'],
                     num_shape=res['num_shape'],
-                    sheet_num_shape=res['sheet_num_shape']
+                    sheet_num_shape=res['sheet_num_shape'],
+                    pic_url='static/%s.png' % filename,
+                    doc_url='static/%s_desc.txt' % filename,
                 )
                 product.save()
                 product_id = product.id
@@ -152,7 +154,9 @@ def product_use_rate_demo(request):
                     rates=res['rates'],
                     detail=res['detail'],
                     num_shape=res['num_shape'],
-                    sheet_num_shape=res['sheet_num_shape']
+                    sheet_num_shape=res['sheet_num_shape'],
+                    pic_url='static/%s.png' % filename,
+                    doc_url='static/%s_desc.txt' % filename,
                 )
                 product.save()
                 product_id = product.id
@@ -174,7 +178,9 @@ def cut_detail(request, p_id):
     content = {
         'sheet_name': product.sheet_name,
         'num_sheet': product.num_sheet,
-        'avg_rate': product.avg_rate
+        'avg_rate': product.avg_rate,
+        'pic_url': product.pic_url,
+        'doc_url': product.doc_url
     }
     if product is not None:
         # 图形的数量
@@ -196,6 +202,7 @@ def cut_detail(request, p_id):
             i_shape += 1
             detail_list.append(detail_dic)
         content['details'] = detail_list
+        content['col_num'] = len(detail_list[0]['num_list']) + 3
 
         # 每块板的总图形数目
         content['sheet_num_shape'] = product.sheet_num_shape.split(',')

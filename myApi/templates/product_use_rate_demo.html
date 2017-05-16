@@ -17,7 +17,9 @@
     {% if error %}
     <p>输入错误：{{ info }}</p>
     {% endif %}
+    {% if desc_url %}
     <p><a href="{{desc_url}}"> 详细信息 </a></p>
+    {% endif %}
     {% if picture %}
         <img src="/{{ picture }}" width="1004" height="100%"/>
     {% endif %}

@@ -4,9 +4,10 @@
 {% if error %}
     <p>{{error}}</p>
 {% else %}
-    <p>板材尺寸：{{sheet_name}}， 一共使用：{{num_sheet}}， 平均使用率：{{avg_rate}}</p>
-    <table border="1">
+
+    <table border="1" style="border-spacing: 1px;border-collapse: collapse;">
         <thead>
+            <tr><td colspan="{{col_num}}"> <p>板材尺寸：{{sheet_name}}， 一共使用：{{num_sheet}}块， 平均使用率：{{avg_rate}}</p></td></tr>
             <tr>
                 <td>长度</td><td>宽度</td>
                 {% for value in details.0.num_list %}
@@ -39,6 +40,8 @@
             </tr>
         </tbody>
     </table>
+
+    <p><a href="/{{doc_url}}"> 文档 </a> | <a href="/{{pic_url}}"> 排版设计图 </a> </p>
 
 {% endif %}
 {% endblock%}

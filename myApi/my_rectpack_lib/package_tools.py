@@ -1,4 +1,5 @@
 # encoding=utf8
+import copy
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
 import matplotlib.patches as patches
@@ -80,14 +81,6 @@ def tidy_shape(shapes, shapes_num, texture, vertical):
                 shape_x, shape_y = shape_y, shape_x
             tmp_list.append((shape_x, shape_y))
 
-    for i in range(len(tmp_list), 1, -1):
-        for j in range(0, i-1):
-            # 长度大于宽带，比较方式就是看长的边长，若长相等，看宽
-            if tmp_list[j][1] < tmp_list[j + 1][1] or (
-                            tmp_list[j][1] == tmp_list[j + 1][1] and tmp_list[j][0] < tmp_list[j + 1][0]):
-                tmp_list[j], tmp_list[j + 1] = tmp_list[j + 1], tmp_list[j]
-                shapes_num[j], shapes_num[j + 1] = shapes_num[j + 1], shapes_num[j]
-
     # 结合数量，合并成一个新的队列
     index_shape = 0
     new_list = list()
@@ -167,13 +160,14 @@ def draw_one_pic(positions, rates, title, width, height, path, border=0,
             output_obj = list()
             for v in position:
                 output_obj.append(
-                    patches.Rectangle((v[0], v[1]), v[2], v[3], edgecolor='m', facecolor='blue', lw=border))
+                    patches.Rectangle((v[0], v[1]), v[2], v[3], edgecolor='black', lw=border, facecolor='none'))
 
             if empty_positions is not None:
                 for em_v in empty_positions[i_p]:
                     output_obj.append(
                         patches.Rectangle(
-                            (em_v[0], em_v[1]), em_v[2], em_v[3], edgecolor='m', facecolor='yellow', lw=border))
+                            (em_v[0], em_v[1]), em_v[2], em_v[3], edgecolor='black',
+                            lw=border, hatch='/', facecolor='none'))
 
             for p in output_obj:
                 ax1.add_patch(p)
@@ -189,7 +183,7 @@ def draw_one_pic(positions, rates, title, width, height, path, border=0,
                     if (p.get_height(), p.get_width()) in shapes:
                         p_id = shapes.index((p.get_height(), p.get_width()))
 
-                    ax1.annotate(p_id, (cx, cy), color='w', weight='bold',
+                    ax1.annotate(p_id, (cx, cy), color='black', weight='bold',
                                  fontsize=6, ha='center', va='center')
 
             ax1.set_xlim(0, width)
@@ -208,3 +202,19 @@ def find_the_same_position(positions):
                 num_list[i] += 1
                 num_list[j] = 0
     return num_list
+
+
+def is_valid_empty_section(empty_sections, shape_list):
+    min_shape = find_small_shape(shape_list)
+    for sections in empty_sections:
+        tmp_sections = copy.deepcopy(sections)
+        for section in tmp_sections:
+            # 面积比较
+            if section[2] * section[3] < min_shape[0] * min_shape[1]:
+                sections.remove(section)
+                continue
+            # 边长比较
+            if section[2] < min_shape[1] or section[3] < min_shape[0]:
+                sections.remove(section)
+                continue
+    return empty_sections

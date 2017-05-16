@@ -18,3 +18,5 @@ class ProductRateDetail(models.Model):
     detail = models.TextField()
     num_shape = models.CharField(max_length=512)
     sheet_num_shape = models.CharField(max_length=512)
+    pic_url = models.CharField(max_length=512, null=True)
+    doc_url = models.CharField(max_length=512, null=True)
