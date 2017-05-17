@@ -210,7 +210,11 @@ def cut_detail(request, p_id):
             detail_dic['width'] = tmp_list[0]
             detail_dic['height'] = tmp_list[1]
             detail_dic['num_list'] = tmp_list[2:]
-            detail_dic['total'] = num_shape[i_shape]
+            tmp_sum = 0
+            for x in range(2, len(tmp_list)):
+                tmp_sum += int(tmp_list[x]) * int(content['bin_num'][x-2])
+
+            detail_dic['total'] = tmp_sum
             total_shape += int(num_shape[i_shape])
             i_shape += 1
             detail_list.append(detail_dic)

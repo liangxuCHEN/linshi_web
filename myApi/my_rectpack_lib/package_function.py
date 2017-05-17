@@ -4,7 +4,6 @@ from package_tools import use_rate, draw_one_pic, tidy_shape, is_valid_empty_sec
 from packer import newPacker
 import guillotine as guillotine
 import packer as packer
-from collections import defaultdict
 
 """
 给定数量的产品，求混排的最优结果
@@ -48,7 +47,27 @@ def get_shape_data(shape_data, bin_data, num_pic=1):
     bins = bin_data.split(';')
     for abin in bins:
         try:
-            bin_type, name, b_w, b_h, is_t, is_v = abin.split(' ')
+            res = abin.split(' ')
+            if len(res) == 6:
+                bin_type = res[0]
+                name = res[1]
+                b_w = res[2]
+                b_h = res[3]
+                is_t = res[4]
+                is_v = res[5]
+            elif len(res) == 5:
+                bin_type = res[0]
+                name = res[1]
+                b_w = res[2]
+                b_h = res[3]
+                is_t = res[4]
+                is_v = 0
+            else:
+                return {
+                    'error': True,
+                    'info': u'板木数据输入有误，缺少参数，至少5个'
+                }
+
             b_w = int(b_w)
             b_h = int(b_h)
             is_t = int(is_t)
@@ -175,21 +194,25 @@ def find_best_solution(all_shapes, border, bin_width, bin_height, is_texture):
     best_solution = None
     best_packer = 0
     index_packer = 0
+    best_empty_positions = None
+    max_empty_ares = 0
     for my_pack in list_packer:
         my_pack.pack()
         avg_rate, tmp_solution = output_res(my_pack.rect_list(), bin_width, bin_height)
         bin_num = len(tmp_solution)
-        if min_bin_num > bin_num or (avg_rate > best_rate and bin_num == min_bin_num):
+        # 余料判断
+        tmp_empty_position, empty_ares = is_valid_empty_section(my_pack.get_sections())
+        if min_bin_num > bin_num or (avg_rate > best_rate and bin_num == min_bin_num) or (
+                        bin_num == min_bin_num and avg_rate == best_rate and empty_ares > max_empty_ares):
             best_solution = tmp_solution
             min_bin_num = bin_num
             best_rate = avg_rate
+            best_empty_positions = tmp_empty_position
+            max_empty_ares = empty_ares
             best_packer = index_packer
         index_packer += 1
 
-    # 余料判断
-    empty_positions = is_valid_empty_section(list_packer[best_packer].get_sections())
-
-    return best_solution, empty_positions, best_rate, best_packer
+    return best_solution, best_empty_positions, best_rate, best_packer
 
 
 def main_process(input_data, pathname):

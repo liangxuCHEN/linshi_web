@@ -215,16 +215,18 @@ def is_valid_empty_section(empty_sections):
     # TODO: 参数调整预料判断
     min_size = 200000    # 面积 0.2 m^2
     min_height = 58      # 最小边长 58 mm
+    total_ares = 0
     res_empty_section = list()
     for sections in empty_sections:
         section_list = list()
         for section in sections:
             if section[2] * section[3] > min_size and min(section[2], section[3]) > min_height:
                 section_list.append(section)
+                total_ares += section[2] * section[3]
 
         res_empty_section.append(section_list)
 
-    return res_empty_section
+    return res_empty_section, total_ares
 
 
 def del_same_data(same_bin_list, data_list):
@@ -235,3 +237,4 @@ def del_same_data(same_bin_list, data_list):
         if int(same_bin_list[id_data]) != 0:
             res.append(data_list[id_data])
     return res
+

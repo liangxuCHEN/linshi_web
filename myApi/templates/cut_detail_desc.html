@@ -9,11 +9,18 @@
         <thead>
             <tr><td colspan="{{col_num}}"> <p>板材：{{sheet_name}}， 一共使用：{{num_sheet}}块， 平均使用率：{{avg_rate}}</p></td></tr>
             <tr>
-                <td>长度</td><td>宽度</td>
+                <td colspan="2">板材编号</td>
                 {% for value in bin_num %}
-                <td> P{{ forloop.counter }} x {{value}}</td>
+                <td> P{{ forloop.counter }}</td>
                 {% endfor %}
                 <td>总数</td>
+            </tr>
+            <tr>
+                <td>宽度</td><td>长度 \ 数量：</td>
+                {% for value in bin_num %}
+                <td> {{value}}</td>
+                {% endfor %}
+                <td>{{num_sheet}}</td>
             </tr>
         </thead>
         <tbody>
