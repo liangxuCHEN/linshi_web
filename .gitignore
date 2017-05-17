@@ -5,3 +5,5 @@
 *.txt
 db.sqlite3
 .gitignore
+static
+simsun.ttc
