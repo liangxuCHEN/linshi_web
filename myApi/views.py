@@ -107,31 +107,16 @@ def product_use_rate(request):
         filename = str(time.time()).split('.')[0]
         path = os.path.join(settings.BASE_DIR, 'static')
         path = os.path.join(path, filename)
-        res = production_rate(request.POST, pathname=path)
-        if res['error']:
-            return HttpResponse(json.dumps(res), content_type="application/json")
+        results = production_rate(request.POST, pathname=path)
+        if results['error']:
+            return HttpResponse(json.dumps(results), content_type="application/json")
         else:
             try:
-                product = ProductRateDetail(
-                    sheet_name=res['sheet'],
-                    num_sheet=res['num_sheet'],
-                    avg_rate=res['rate'],
-                    rates=res['rates'],
-                    detail=res['detail'],
-                    num_shape=res['num_shape'],
-                    sheet_num_shape=res['sheet_num_shape'],
-                    pic_url='static/%s.png' % filename,
-                    doc_url='static/%s_desc.txt' % filename,
-                )
-                product.save()
-                product_id = product.id
+                project_id = create_project(results, request.POST, filename)
             except:
-                product_id = None
+                project_id = None
             content = {
-                'rates': res['rate'],
-                'picture': 'static/%s.png' % filename,
-                'describe': 'static/%s_desc.txt' % filename,
-                'desc_url': 'product/%d' % product_id if product_id is not None else '',
+                'project_id': project_id
             }
             return HttpResponse(json.dumps(content), content_type="application/json")
     else:
@@ -157,33 +142,10 @@ def product_use_rate_demo(request):
         if results['error']:
             return render(request, 'product_use_rate_demo.html', results)
         else:
-            # try:
-            # save project
-            project = Project(
-                comment=request.POST['project_comment'],
-                data_input=request.POST['shape_data'] + request.POST['bin_data']
-            )
-            project.save()
-            # save product
-            for res in results['statistics_data']:
-                product = ProductRateDetail(
-                    sheet_name=res['sheet'],
-                    num_sheet=res['num_sheet'],
-                    avg_rate=res['rate'],
-                    rates=res['rates'],
-                    detail=res['detail'],
-                    num_shape=res['num_shape'],
-                    sheet_num_shape=res['sheet_num_shape'],
-                    pic_url='static/%s%s.png' % (filename, res['bin_type']),
-                    same_bin_list=res['same_bin_list'],
-                    empty_sections=res['empty_sections']
-                )
-                product.save()
-                project.products.add(product)
-            project.save()
-            project_id = project.id
-            # except:
-            #     project_id = None
+            try:
+                project_id = create_project(results, request.POST, filename)
+            except:
+                project_id = None
             content = {
                 'shape_data': request.POST['shape_data'],
                 'bin_data': request.POST['bin_data'],
@@ -192,6 +154,33 @@ def product_use_rate_demo(request):
             return render(request, 'product_use_rate_demo.html', content)
     else:
         return render(request, 'product_use_rate_demo.html')
+
+
+def create_project(results, post_data, filename):
+    # save project
+    project = Project(
+        comment=post_data['project_comment'],
+        data_input=post_data['shape_data'] + post_data['bin_data']
+    )
+    project.save()
+    # save product
+    for res in results['statistics_data']:
+        product = ProductRateDetail(
+            sheet_name=res['sheet'],
+            num_sheet=res['num_sheet'],
+            avg_rate=res['rate'],
+            rates=res['rates'],
+            detail=res['detail'],
+            num_shape=res['num_shape'],
+            sheet_num_shape=res['sheet_num_shape'],
+            pic_url='static/%s%s.png' % (filename, res['bin_type']),
+            same_bin_list=res['same_bin_list'],
+            empty_sections=res['empty_sections']
+        )
+        product.save()
+        project.products.add(product)
+    project.save()
+    return project.id
 
 
 def cut_detail(request, p_id):

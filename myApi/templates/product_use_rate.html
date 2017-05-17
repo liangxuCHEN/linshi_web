@@ -3,19 +3,14 @@
 {% block content %}
 <div class="jumbotron">
 <form method="post" action="{% url 'product_use_rate'%}">
-    <label>板材长度(mm)：</label><input type="number" name="width"  value="2430"/><br/>
-    <label>板材宽读(mm)：</label><input type="number" name="height" value="1210"/><br/>
+    <textarea rows="4" cols="50" name="project_comment" placeholder="描述需要排版的产品系列">{{ project_comment }}</textarea><br>
     <label>组件的间隙(mm)：</label><input type="number" name="border" value="5" min="0"/><br/>
-    <label>有纹理：</label><input type="radio" name="is_texture" value="1" />
-    <label>无纹理：</label><input type="radio" name="is_texture" value="0" checked /><br/>
-    <label>竖直摆放：</label><input type="radio" name="is_vertical" value="1" />
-    <label>水平摆放：</label><input type="radio" name="is_vertical" value="0" checked /><br/>
-    <p>格式：宽,长,数量; 例子: 400 500 30;130 250 10;800 900 5</p>
-    <textarea rows="4" cols="50" name="shape_data"></textarea>
+    <p>组件数据格式：板木编号,宽,长,数量; 例子：A 582 58 20;B 732 58 20;C 770 450 10;A 770 450 10</p>
+    <textarea rows="4" cols="50" name="shape_data">{{ shape_data }}</textarea>
+    <p>板木数据格式：板木编号,名字,长,宽,是否有纹理（0 / 1 = 无 / 有）, 水平或竖直摆放（0 / 1 = 水平 / 竖直）</p>
+    <p>例子：A 双面胡桃木哑光25mm 2430 1210 1 0;B 双面白布纹哑光18mm 2430 1210 0 0;C 单面胡桃木哑光9mm 2430 1210 1 1</p>
+    <textarea rows="4" cols="50" name="bin_data">{{ bin_data }}</textarea><br>
     <input type="submit" value="提交" />
 </form>
-    {% if error %}
-    <p>输入错误：{{ info }}</p>
-    {% endif %}
 </div>
 {% endblock %}
