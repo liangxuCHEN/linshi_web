@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}混合排列方案{% endblock %}
+{% block content %}
+{% if error %}
+    <p>{{error}}</p>
+{% else %}
+    <p>创建时间： {{created}} </p>
+    <p>描述：{{comment}} </p>
+    <hr>
+    {%for abin in bin_list %}
+        <p>{{abin.sheet_name}}</p>
+        <p>使用数量：{{abin.num_sheet}}, 平均使用率：{{abin.avg_rate}}</p>
+        <p><a href="/{{abin.pic_url}}"> 排版设计图 </a> | <a href="/product/{{abin.bin_id}}">统计信息</a></p>
+        <hr>
+    {% endfor %}
+{% endif %}
+{% endblock%}

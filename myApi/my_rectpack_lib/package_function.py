@@ -1,9 +1,10 @@
 # encoding=utf8
 
-from package_tools import use_rate, draw_one_pic, tidy_shape, is_valid_empty_section, find_small_shape
+from package_tools import use_rate, draw_one_pic, tidy_shape, is_valid_empty_section, find_the_same_position
 from packer import newPacker
 import guillotine as guillotine
 import packer as packer
+from collections import defaultdict
 
 """
 给定数量的产品，求混排的最优结果
@@ -217,7 +218,6 @@ def main_process(input_data, pathname):
     statistics_data = []  # 汇总数据
     # 每一种板木排版一次
     for bin_type, values in data['data'].items():
-        print(values['is_texture'], values['is_vertical'])
         all_shapes, shape_list, num_shapes = tidy_shape(
             values['shape_list'], values['shape_num'], values['is_texture'], values['is_vertical'])
         best_solution, empty_positions, best_rate, best_packer = find_best_solution(
@@ -228,45 +228,72 @@ def main_process(input_data, pathname):
         for s in best_solution:
             r = use_rate(s, values['width'], values['height'])
             rate_list.append(r)
-        title = 'Average rate : %s' % str(best_rate)
-
+        title = u'平均利用率: %s' % str(best_rate)
         # 把排版结果显示并且保存
-        draw_one_pic(best_solution, rate_list, title, values['width'], values['height'],
-                     path=pathname+bin_type, border=1,
-                     shapes=shape_list, shapes_num=num_shapes, avg_rate=best_rate, empty_positions=empty_positions)
+        # 返回唯一的排版列表，以及数量
+        same_bin_list = find_the_same_position(best_solution)
 
+        draw_one_pic(best_solution, rate_list, values['width'], values['height'],
+                     path=pathname+bin_type, border=1, num_list=same_bin_list, title=title,
+                     shapes=shape_list, empty_positions=empty_positions)
+
+        # 保存统计信息
         statistics_data.append({
             'error': False,
             'rate': best_rate,
             'num_sheet': len(best_solution),
-            'detail': detail_text(shape_list, best_solution),
+            'detail': detail_text(shape_list, best_solution, same_bin_list),
             'num_shape': str(num_shapes)[1:-1],
+            'same_bin_list': str(same_bin_list)[1:-1],
             'sheet_num_shape': str([len(s) for s in best_solution])[1:-1],
             'rates': str(rate_list)[1:-1],
-            'sheet': '%d x %d' % (values['width'], values['height']),
+            'sheet': u'%s %d x %d' % (values['name'], values['width'], values['height']),
             'name': values['name'],
             'bin_type': bin_type,
             'pic_url': pathname+bin_type+'.png',
-            'doc_url': pathname+bin_type+'_desc.txt'
+            'empty_sections': detail_empty_sections(empty_positions)
         })
 
     return {'statistics_data': statistics_data, 'error': False}
 
 
-def detail_text(shape_list, situation_list):
+def detail_text(shape_list, situation_list, num_list):
     output_text = ''
+
     for shape in shape_list:
         output_text += '%d,%d' % (shape[1], shape[0])
-
+        id_situation = 0
         for situation in situation_list:
-            # 统计每块板有多少个图形
-            count = 0
-            for position in situation:
-                if shape == (position[2], position[3]) or shape == (position[3], position[2]):
-                    count += 1
+            if num_list[id_situation] != 0:
+                # 统计每块板有多少个shape一样的图形
+                count = 0
+                for position in situation:
+                        if shape == (position[2], position[3]) or shape == (position[3], position[2]):
+                            count += 1
 
-            output_text += ',%d' % count
+                output_text += ',%d' % count
+            id_situation += 1
         # 拆分用‘;’
         output_text += ';'
 
     return output_text[:-1]
+
+
+def detail_empty_sections(empty_sections):
+    counts = {}
+
+    for e_places in empty_sections:
+        for e_p in e_places:
+            c_id = "%dx%d" % (max(e_p[2], e_p[3]), min(e_p[2], e_p[3]))
+            if c_id in counts.keys():
+                counts[c_id]['num'] += 1
+            else:
+                counts[c_id] = {
+                    'num': 1,
+                    'ares': e_p[2] * e_p[3]
+                }
+    text = ""
+    for key, value in counts.items():
+        text += "%s %d %d;" % (key, value['num'], value['ares'])
+    return text[:-1]
+

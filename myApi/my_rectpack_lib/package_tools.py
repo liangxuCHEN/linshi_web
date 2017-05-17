@@ -1,8 +1,10 @@
 # encoding=utf8
-import copy
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+from matplotlib.font_manager import FontProperties
 from matplotlib.figure import Figure
 import matplotlib.patches as patches
+import os
+from django_api import settings
 
 
 def use_rate(use_place, width, height):
@@ -131,32 +133,37 @@ def write_desc_doc(shapes, shapes_num, path, width, height, positions, num_list,
                 i_place += 1
 
 
-def draw_one_pic(positions, rates, title, width, height, path, border=0,
-                 shapes=None, shapes_num=None, avg_rate=None, empty_positions=None):
+def draw_one_pic(positions, rates, width, height, path, border=0, num_list=None,
+                 shapes=None, empty_positions=None, title=None):
     # 多个图像需要处理
 
     if shapes is not None:
-        # 返回唯一的排版列表，以及数量
-        num_list = find_the_same_position(positions)
-        # 写一个说明文档
-        write_desc_doc(shapes, shapes_num, path, width, height, positions, num_list, rates, avg_rate, empty_positions)
+        if num_list is None:
+            # 返回唯一的排版列表，以及数量
+            num_list = find_the_same_position(positions)
 
     else:
         # 单个图表
         num_list = [1]
     i_p = 0     # 记录板材索引
     i_pic = 1   # 记录图片的索引
-    num = len(num_list)
+    num = len(del_same_data(num_list, num_list))
     fig_height = num * 4
     fig1 = Figure(figsize=(8, fig_height))
-    fig1.suptitle(title, fontsize=12, fontweight='bold')
+    # 使用中文
+    path_ttc = os.path.join(settings.BASE_DIR, 'static')
+    path_ttc = os.path.join(path_ttc, 'simsun.ttc')
+    font_set = FontProperties(fname=path_ttc, size=12)
+
+    if title is not None:
+        fig1.suptitle(title, fontweight='bold', fontproperties=font_set)
     FigureCanvas(fig1)
 
     for position in positions:
         if num_list[i_p] != 0:
             ax1 = fig1.add_subplot(num, 1, i_pic, aspect='equal')
             i_pic += 1
-            ax1.set_title('the rate: %s, Qty: %d' % (str(rates[i_p]), num_list[i_p]))
+            ax1.set_title(u'利用率: %s, 数量: %d' % (str(rates[i_p]), num_list[i_p]), fontproperties=font_set)
             output_obj = list()
             for v in position:
                 output_obj.append(
@@ -218,3 +225,13 @@ def is_valid_empty_section(empty_sections):
         res_empty_section.append(section_list)
 
     return res_empty_section
+
+
+def del_same_data(same_bin_list, data_list):
+    if len(same_bin_list) != len(data_list):
+        return data_list
+    res = list()
+    for id_data in range(0, len(data_list)):
+        if int(same_bin_list[id_data]) != 0:
+            res.append(data_list[id_data])
+    return res

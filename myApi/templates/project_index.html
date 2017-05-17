@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}板木排版报告{% endblock %}
+{% block content %}
+{% if project_list %}
+    <ul>
+    {% for project in project_list %}
+        <p>{{project.comment}}</p>
+        <li><a href="{% url 'project_detail' project.id %}">详细</a></li>
+    {% endfor %}
+    </ul>
+{% else %}
+    <p>没有报告</p>
+{% endif %}
+<hr>
+<a href="{% url 'product_use_rate_demo' %}"> 新增方案</a>
+{% endblock%}

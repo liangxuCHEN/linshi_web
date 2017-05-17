@@ -3,13 +3,15 @@ import json
 import os
 import time
 
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.views import generic
 from myApi.my_rectpack_lib.single_use_rate import main_process, use_rate_data_is_valid
 from myApi.my_rectpack_lib.package_function import main_process as production_rate
+from myApi.my_rectpack_lib.package_tools import del_same_data
 from django_api import settings
-from myApi.models import Userate, ProductRateDetail
+from myApi.models import Userate, ProductRateDetail, Project
 
 
 def home_page(request):
@@ -143,32 +145,37 @@ def product_use_rate_demo(request):
         path = os.path.join(settings.BASE_DIR, 'static')
         path = os.path.join(path, filename)
         results = production_rate(request.POST, pathname=path)
-        print results
         if results['error']:
             return render(request, 'product_use_rate_demo.html', results)
         else:
-            try:
-                desc_list = list()
-                for res in results['statistics_data']:
-                    product = ProductRateDetail(
-                        sheet_name=res['sheet'],
-                        num_sheet=res['num_sheet'],
-                        avg_rate=res['rate'],
-                        rates=res['rates'],
-                        detail=res['detail'],
-                        num_shape=res['num_shape'],
-                        sheet_num_shape=res['sheet_num_shape'],
-                        pic_url='static/%s%s.png' % (filename, res['bin_type']),
-                        doc_url='static/%s%s_desc.txt' % (filename, res['bin_type']),
-                    )
-                    product.save()
-                    desc_list.append({'p_id': product.id, 'bin_name': res['name']})
-            except:
-                desc_list = None
+            # try:
+            # save project
+            project = Project(comment=request.POST['project_comment'])
+            project.save()
+            # save product
+            for res in results['statistics_data']:
+                product = ProductRateDetail(
+                    sheet_name=res['sheet'],
+                    num_sheet=res['num_sheet'],
+                    avg_rate=res['rate'],
+                    rates=res['rates'],
+                    detail=res['detail'],
+                    num_shape=res['num_shape'],
+                    sheet_num_shape=res['sheet_num_shape'],
+                    pic_url='static/%s%s.png' % (filename, res['bin_type']),
+                    same_bin_list=res['same_bin_list'],
+                    empty_sections=res['empty_sections']
+                )
+                product.save()
+                project.products.add(product)
+            project.save()
+            project_id = project.id
+            # except:
+            #     project_id = None
             content = {
                 'shape_data': request.POST['shape_data'],
                 'bin_data': request.POST['bin_data'],
-                'desc_list': desc_list,
+                'project_id': project_id
             }
             return render(request, 'product_use_rate_demo.html', content)
     else:
@@ -182,9 +189,12 @@ def cut_detail(request, p_id):
         'num_sheet': product.num_sheet,
         'avg_rate': product.avg_rate,
         'pic_url': product.pic_url,
-        'doc_url': product.doc_url
     }
+
     if product is not None:
+        # 合并相同排版
+        same_bin_list = product.same_bin_list.split(',')
+        content['bin_num'] = del_same_data(same_bin_list, same_bin_list)
         # 图形的数量
         num_shape = product.num_shape.split(',')
 
@@ -193,6 +203,7 @@ def cut_detail(request, p_id):
         detail_list = list()
         i_shape = 0
         total_shape = 0
+
         for detail in details:
             detail_dic = {}
             tmp_list = detail.split(',')
@@ -208,12 +219,50 @@ def cut_detail(request, p_id):
         content['col_num'] = len(detail_list[0]['num_list']) + 3
 
         # 每块板的总图形数目
-        content['sheet_num_shape'] = product.sheet_num_shape.split(',')
+        content['sheet_num_shape'] = del_same_data(same_bin_list, product.sheet_num_shape.split(','))
         content['sheet_num_shape'].append(total_shape)
         # 每块板的利用率
-        content['rates'] = product.rates.split(',')
+        content['rates'] = del_same_data(same_bin_list, product.rates.split(','))
         content['rates'].append(content['avg_rate'])
+
+        # 余料信息
+        empty_sections = product.empty_sections.split(';')
+        content['empty_sections'] = []
+        for e_section in empty_sections:
+            name, num, ares = e_section.split(' ')
+            content['empty_sections'].append({
+                'name': name,
+                'num': num,
+                'ares': ares
+            })
 
         return render(request, 'cut_detail_desc.html', content)
     else:
         return render(request, 'cut_detail_desc.html', {'error': u'没有找到，请检查ID'})
+
+
+def project_detail(request, p_id):
+    project = Project.objects.get(pk=p_id)
+    if project is None:
+        return render(request, 'cut_detail_desc.html', {'error': u'没有找到，请检查ID'})
+    bin_list = project.products.all()
+    content = {
+        'created': project.created,
+        'comment': project.comment,
+        'bin_list': list()
+    }
+    for abin in bin_list:
+        content['bin_list'].append({
+            'bin_id': abin.id,
+            'sheet_name': abin.sheet_name,
+            'num_sheet': abin.num_sheet,
+            'avg_rate': abin.avg_rate,
+            'pic_url': abin.pic_url,
+        })
+    return render(request, 'project_detail.html', content)
+
+
+class ProjectIndexView(generic.ListView):
+    model = Project
+    template_name = "project_index.html"
+    context_object_name = "project_list"

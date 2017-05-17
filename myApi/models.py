@@ -19,4 +19,14 @@ class ProductRateDetail(models.Model):
     num_shape = models.CharField(max_length=512)
     sheet_num_shape = models.CharField(max_length=512)
     pic_url = models.CharField(max_length=512, null=True)
-    doc_url = models.CharField(max_length=512, null=True)
+    same_bin_list = models.CharField(max_length=256, null=True)
+    empty_sections = models.CharField(max_length=512, null=True)
+
+
+class Project(models.Model):
+    created = models.DateTimeField(auto_now_add=True)
+    products = models.ManyToManyField(ProductRateDetail)
+    comment = models.TextField()
+
+    class Meta:
+        ordering = ('created',)
