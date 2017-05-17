@@ -142,31 +142,33 @@ def product_use_rate_demo(request):
         filename = str(time.time()).split('.')[0]
         path = os.path.join(settings.BASE_DIR, 'static')
         path = os.path.join(path, filename)
-        res = production_rate(request.POST, pathname=path)
-        if res['error']:
-            return render(request, 'product_use_rate_demo.html', res)
+        results = production_rate(request.POST, pathname=path)
+        print results
+        if results['error']:
+            return render(request, 'product_use_rate_demo.html', results)
         else:
             try:
-                product = ProductRateDetail(
-                    sheet_name=res['sheet'],
-                    num_sheet=res['num_sheet'],
-                    avg_rate=res['rate'],
-                    rates=res['rates'],
-                    detail=res['detail'],
-                    num_shape=res['num_shape'],
-                    sheet_num_shape=res['sheet_num_shape'],
-                    pic_url='static/%s.png' % filename,
-                    doc_url='static/%s_desc.txt' % filename,
-                )
-                product.save()
-                product_id = product.id
+                desc_list = list()
+                for res in results['statistics_data']:
+                    product = ProductRateDetail(
+                        sheet_name=res['sheet'],
+                        num_sheet=res['num_sheet'],
+                        avg_rate=res['rate'],
+                        rates=res['rates'],
+                        detail=res['detail'],
+                        num_shape=res['num_shape'],
+                        sheet_num_shape=res['sheet_num_shape'],
+                        pic_url='static/%s%s.png' % (filename, res['bin_type']),
+                        doc_url='static/%s%s_desc.txt' % (filename, res['bin_type']),
+                    )
+                    product.save()
+                    desc_list.append({'p_id': product.id, 'bin_name': res['name']})
             except:
-                product_id = None
+                desc_list = None
             content = {
-                'rates': res['rate'],
-                'picture': 'static/%s.png' % filename,
                 'shape_data': request.POST['shape_data'],
-                'desc_url': '/product/%d' % product_id if product_id is not None else '',
+                'bin_data': request.POST['bin_data'],
+                'desc_list': desc_list,
             }
             return render(request, 'product_use_rate_demo.html', content)
     else:
@@ -201,6 +203,7 @@ def cut_detail(request, p_id):
             total_shape += int(num_shape[i_shape])
             i_shape += 1
             detail_list.append(detail_dic)
+
         content['details'] = detail_list
         content['col_num'] = len(detail_list[0]['num_list']) + 3
 

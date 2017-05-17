@@ -9,7 +9,7 @@ def use_rate(use_place, width, height):
     total_use = 0
     for b_x, b_y, w, h in use_place:
         total_use += w * h
-    return int(float(total_use)/width/height * 100)/100.0
+    return int(float(total_use)/(width*height+(width+height)*10 - 100) * 100)/100.0
 
 
 def draw_many_pics(positions, width, height, path, border=0):
@@ -204,17 +204,17 @@ def find_the_same_position(positions):
     return num_list
 
 
-def is_valid_empty_section(empty_sections, shape_list):
-    min_shape = find_small_shape(shape_list)
+def is_valid_empty_section(empty_sections):
+    # TODO: 参数调整预料判断
+    min_size = 200000    # 面积 0.2 m^2
+    min_height = 58      # 最小边长 58 mm
+    res_empty_section = list()
     for sections in empty_sections:
-        tmp_sections = copy.deepcopy(sections)
-        for section in tmp_sections:
-            # 面积比较
-            if section[2] * section[3] < min_shape[0] * min_shape[1]:
-                sections.remove(section)
-                continue
-            # 边长比较
-            if section[2] < min_shape[1] or section[3] < min_shape[0]:
-                sections.remove(section)
-                continue
-    return empty_sections
+        section_list = list()
+        for section in sections:
+            if section[2] * section[3] > min_size and min(section[2], section[3]) > min_height:
+                section_list.append(section)
+
+        res_empty_section.append(section_list)
+
+    return res_empty_section
