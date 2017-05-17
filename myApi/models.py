@@ -26,6 +26,7 @@ class ProductRateDetail(models.Model):
 class Project(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     products = models.ManyToManyField(ProductRateDetail)
+    data_input = models.TextField(null=True)
     comment = models.TextField()
 
     class Meta:

@@ -141,6 +141,15 @@ def product_use_rate(request):
 @csrf_exempt
 def product_use_rate_demo(request):
     if request.method == 'POST':
+        # 是否已经有
+        projects = Project.objects.filter(data_input=request.POST['shape_data']+request.POST['bin_data'])
+        if len(projects) > 0:
+            content = {
+                'shape_data': request.POST['shape_data'],
+                'bin_data': request.POST['bin_data'],
+                'project_id': projects[0].id
+            }
+            return render(request, 'product_use_rate_demo.html', content)
         filename = str(time.time()).split('.')[0]
         path = os.path.join(settings.BASE_DIR, 'static')
         path = os.path.join(path, filename)
@@ -150,7 +159,10 @@ def product_use_rate_demo(request):
         else:
             # try:
             # save project
-            project = Project(comment=request.POST['project_comment'])
+            project = Project(
+                comment=request.POST['project_comment'],
+                data_input=request.POST['shape_data'] + request.POST['bin_data']
+            )
             project.save()
             # save product
             for res in results['statistics_data']:

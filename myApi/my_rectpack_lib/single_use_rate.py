@@ -202,6 +202,7 @@ def main_process(data, pathname):
                 break
 
     rate = use_rate(situation, WIDTH, HEIGHT)
+    rate = int(rate*100)/100.0
     try:
         draw_one_pic([situation], [rate], WIDTH, HEIGHT, path=pathname, border=1)
     except Exception as e:

@@ -11,7 +11,7 @@ def use_rate(use_place, width, height):
     total_use = 0
     for b_x, b_y, w, h in use_place:
         total_use += w * h
-    return int(float(total_use)/(width*height+(width+height)*10 - 100) * 100)/100.0
+    return int(float(total_use)/(width*height+(width+height)*10 - 100) * 10000)/10000.0
 
 
 def draw_many_pics(positions, width, height, path, border=0):

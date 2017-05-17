@@ -4,7 +4,7 @@
 {% if error %}
     <p>{{error}}</p>
 {% else %}
-    <p>创建时间： {{created}} </p>
+    <p>创建时间： {{created| date:"Y年n月d日 H:i" }} </p>
     <p>描述：{{comment}} </p>
     <hr>
     {%for abin in bin_list %}

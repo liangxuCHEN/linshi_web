@@ -153,7 +153,7 @@ def output_res(all_rects, width, height):
         r = use_rate(s, width, height)
         total_rate += r
         rate_list.append(r)
-    avg_rate = int((total_rate / len(all_positions) * 100)) / 100.0
+    avg_rate = int((total_rate / len(all_positions) * 10000)) / 10000.0
     return avg_rate, all_positions
 
 
@@ -189,7 +189,7 @@ def find_best_solution(all_shapes, border, bin_width, bin_height, is_texture):
         my_pack.add_bin(bin_width, bin_height, NUM)
 
     # Start packing
-    best_rate = 0
+    best_rate = 0.0
     min_bin_num = NUM
     best_solution = None
     best_packer = 0
