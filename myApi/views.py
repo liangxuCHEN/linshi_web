@@ -270,4 +270,5 @@ def project_detail(request, p_id):
 class ProjectIndexView(generic.ListView):
     model = Project
     template_name = "project_index.html"
+    paginate_by = 10   # 一个页面显示的条目
     context_object_name = "project_list"
