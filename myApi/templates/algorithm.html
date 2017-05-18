@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}算法选用统计{% endblock %}
+{% block content %}
+<div class="jumbotron">
+
+        <table border="1">
+            <tr><td>TOP 5 算法</td><td>全部算法</td></tr>
+            <tr>
+                {% if algo_list %}
+                <td><ul>
+                    {% for item in top5 %}
+                    <li>算法{{item.0}} ： {{item.1}}</li>
+                    {% endfor %}
+                </ul></td>
+                {% endif %}
+                {% if algo_list %}
+                <td><ul>
+                    {% for item in algo_list %}
+                    <li>算法{{item.0}} ： {{item.1}}</li>
+                    {% endfor %}
+                </ul></td>
+                {% endif %}
+            </tr>
+        </table>
+</div>
+{% endblock %}

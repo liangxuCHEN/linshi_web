@@ -2,15 +2,20 @@
 import json
 import os
 import time
+import copy
+from collections import defaultdict
 
+from django_api import settings
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views import generic
+
+from myApi.forms import AlgoForm
 from myApi.my_rectpack_lib.single_use_rate import main_process, use_rate_data_is_valid
 from myApi.my_rectpack_lib.package_function import main_process as production_rate
 from myApi.my_rectpack_lib.package_tools import del_same_data
-from django_api import settings
+
 from myApi.models import Userate, ProductRateDetail, Project
 
 
@@ -104,6 +109,14 @@ def single_use_rate_demo(request):
 @csrf_exempt
 def product_use_rate(request):
     if request.method == 'POST':
+        if request.method == 'POST':
+            # 是否已经有
+            projects = Project.objects.filter(data_input=request.POST['shape_data'] + request.POST['bin_data'])
+            if len(projects) > 0:
+                content = {
+                    'project_id': projects[0].id
+                }
+                return HttpResponse(json.dumps(content), content_type="application/json")
         filename = str(time.time()).split('.')[0]
         path = os.path.join(settings.BASE_DIR, 'static')
         path = os.path.join(path, filename)
@@ -132,7 +145,8 @@ def product_use_rate_demo(request):
             content = {
                 'shape_data': request.POST['shape_data'],
                 'bin_data': request.POST['bin_data'],
-                'project_id': projects[0].id
+                'project_id': projects[0].id,
+                'form': AlgoForm()
             }
             return render(request, 'product_use_rate_demo.html', content)
         filename = str(time.time()).split('.')[0]
@@ -140,6 +154,7 @@ def product_use_rate_demo(request):
         path = os.path.join(path, filename)
         results = production_rate(request.POST, pathname=path)
         if results['error']:
+            results['form'] = AlgoForm()
             return render(request, 'product_use_rate_demo.html', results)
         else:
             try:
@@ -149,11 +164,13 @@ def product_use_rate_demo(request):
             content = {
                 'shape_data': request.POST['shape_data'],
                 'bin_data': request.POST['bin_data'],
-                'project_id': project_id
+                'project_id': project_id,
+                'form': AlgoForm()
             }
             return render(request, 'product_use_rate_demo.html', content)
     else:
-        return render(request, 'product_use_rate_demo.html')
+        form = AlgoForm()
+        return render(request, 'product_use_rate_demo.html', {'form': form})
 
 
 def create_project(results, post_data, filename):
@@ -175,7 +192,8 @@ def create_project(results, post_data, filename):
             sheet_num_shape=res['sheet_num_shape'],
             pic_url='static/%s%s.png' % (filename, res['bin_type']),
             same_bin_list=res['same_bin_list'],
-            empty_sections=res['empty_sections']
+            empty_sections=res['empty_sections'],
+            algorithm=res['algo_id']
         )
         product.save()
         project.products.add(product)
@@ -246,6 +264,23 @@ def cut_detail(request, p_id):
         return render(request, 'cut_detail_desc.html', {'error': u'没有找到，请检查ID'})
 
 
+def statistics_algo(request):
+    products = ProductRateDetail.objects.all()
+    algo_dict = defaultdict(lambda: 0)
+    for product in products:
+        if product.algorithm is not None:
+            algo_dict[product.algorithm] += 1
+
+    algo_list = sorted(algo_dict.items())
+    top5 = copy.deepcopy(algo_list)
+    for i in range(0, len(top5)-1):
+        for j in range(i, len(top5)):
+            if top5[i][1] < top5[j][1]:
+                top5[i], top5[j] = top5[j], top5[i]
+
+    return render(request, 'algorithm.html', {'algo_list': algo_list, 'top5': top5[:5]})
+
+
 def project_detail(request, p_id):
     project = Project.objects.get(pk=p_id)
     if project is None:
@@ -272,3 +307,5 @@ class ProjectIndexView(generic.ListView):
     template_name = "project_index.html"
     paginate_by = 10   # 一个页面显示的条目
     context_object_name = "project_list"
+
+

@@ -21,6 +21,7 @@ class ProductRateDetail(models.Model):
     pic_url = models.CharField(max_length=512, null=True)
     same_bin_list = models.CharField(max_length=256, null=True)
     empty_sections = models.CharField(max_length=512, null=True)
+    algorithm = models.IntegerField(null=True)
 
 
 class Project(models.Model):
